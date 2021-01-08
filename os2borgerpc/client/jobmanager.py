@@ -581,9 +581,13 @@ def send_special_data():
 def update_and_run():
     for folder in (JOBS_DIR, SECURITY_DIR,):
         os.makedirs(folder, mode=0o700, exist_ok=True)
-
+    config = OS2borgerPCConfig()
+    if config.has_config('job_timeout'):
+        job_timeout = config.get_value('job_timeout')
+    else:
+        job_timeout = 900
     try:
-        with filelock(LOCK_FILE, max_age=900):
+        with filelock(LOCK_FILE, max_age=job_timeout):
             try:
                 send_special_data()
                 get_instructions()
