@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta
 # Search syslog from the end to a certain time
 # Syslog is by Ubuntu default rotated daily
 
+
 def read(sec, fname):
     data = ""
     year = date.today().year

@@ -37,9 +37,11 @@ def filelock(file_name, max_age=None):
                 lock_age = time.time() - os.stat(pid_file).st_mtime
                 if lock_age >= max_age:
                     try:
-                        print >> sys.stderr, (
-                                ("warning: forcibly acquiring"
-                                " lock file \"{0}\"").format(file_name))
+                        msg = (
+                            "warning: " +
+                            f"forcibly acquiring lock file \"{file_name}\""
+                        )
+                        print(msg, file=sys.stderr)
                         with open(pid_file, "rt") as fp:
                             pid = int(fp.read().strip())
                         os.kill(pid, signal.SIGKILL)
@@ -67,7 +69,7 @@ def filelock(file_name, max_age=None):
 
 
 def get_upgrade_packages():
-    matcher = re.compile('Inst\s+(\S+)')
+    matcher = re.compile(r'Inst\s+(\S+)')
     prg = subprocess.Popen(
         ['apt-get', '--just-print',  'dist-upgrade'],
         stdout=subprocess.PIPE
