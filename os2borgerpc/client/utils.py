@@ -15,8 +15,8 @@ import time
 import signal
 import errno
 
-from bibos_utils.bibos_config import BibOSConfig
-from bibos_client.admin_client import BibOSAdmin
+from os2borgerpc.client.config import OS2borgerPCConfig
+from os2borgerpc.client.admin_client import OS2borgerPCAdmin
 
 
 @contextlib.contextmanager

@@ -10,6 +10,7 @@ import glob
 import re
 import subprocess
 import tempfile
+import pkg_resources
 
 from datetime import datetime
 
@@ -18,8 +19,9 @@ from .config import OS2borgerPCConfig
 from .admin_client import OS2borgerPCAdmin
 from .utils import upload_packages, filelock
 
+
 # Keep this in sync with setup.py
-OS2BORGERPC_CLIENT_VERSION = "0.0.5.1"
+OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution("os2borgerpc_client").version
 
 """
 Directory structure for storing OS2borgerPC jobs:
@@ -578,9 +580,9 @@ def update_and_run():
                 run_pending_jobs()
                 handle_security_events()
             except (IOError, socket.error):
-                print "Network error, exiting ..."
+                print("Network error, exiting ...")
     except IOError:
-        print "Couldn't get lock"
+        print("Couldn't get lock")
 
 
 if __name__ == '__main__':
