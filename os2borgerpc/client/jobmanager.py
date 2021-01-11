@@ -14,7 +14,7 @@ import pkg_resources
 
 from datetime import datetime
 
-from .config import OS2borgerPCConfig
+from .config import OS2borgerPCConfig, has_config
 
 from .admin_client import OS2borgerPCAdmin
 from .utils import upload_packages, filelock
@@ -24,6 +24,7 @@ from .utils import upload_packages, filelock
 OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
     "os2borgerpc_client"
 ).version
+DEFAULT_JOB_TIMEOUT = 900
 
 """
 Directory structure for storing OS2borgerPC jobs:
@@ -569,12 +570,12 @@ def handle_security_events():
         send_security_events(now)
 
 
-def send_special_data():
+def send_config_value(key, value):
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
     remote.push_config_keys(uid, {
-        "_os2borgerpc.client_version": OS2BORGERPC_CLIENT_VERSION
+        key: value
     })
 
 
@@ -582,14 +583,19 @@ def update_and_run():
     for folder in (JOBS_DIR, SECURITY_DIR,):
         os.makedirs(folder, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
-    if config.has_config('job_timeout'):
+    if has_config('job_timeout'):
         job_timeout = config.get_value('job_timeout')
     else:
-        job_timeout = 900
+        job_timeout = DEFAULT_JOB_TIMEOUT
+        send_config_value('job_timeout', job_timeout)
     try:
         with filelock(LOCK_FILE, max_age=job_timeout):
             try:
-                send_special_data()
+                send_config_value(
+                    "_os2borgerpc.client_version",
+                    OS2BORGERPC_CLIENT_VERSION
+                )
+
                 get_instructions()
                 run_pending_jobs()
                 handle_security_events()
