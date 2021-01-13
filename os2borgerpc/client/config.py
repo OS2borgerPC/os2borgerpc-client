@@ -1,7 +1,6 @@
 import os
 import os.path
 import yaml
-import sys
 import stat
 
 DEFAULT_CONFIG_FILES = [
@@ -25,7 +24,7 @@ def has_config(key, filenames=DEFAULT_CONFIG_FILES):
     try:
         # TODO: It would be more elegant to determine this without computing
         # the value.
-        val = conf.get_value(key)
+        val = conf.get_value(key)  # noqa
         exists = True
     except KeyError:
         pass
@@ -35,7 +34,7 @@ def has_config(key, filenames=DEFAULT_CONFIG_FILES):
 def set_config(key, value, filenames=DEFAULT_CONFIG_FILES):
     """Set value of a config key."""
     conf = OS2borgerPCConfig(filenames)
-    val = conf.set_value(key, value)
+    conf.set_value(key, value)
     conf.save()
 
 
@@ -128,29 +127,23 @@ class OS2borgerPCConfig():
 
     def get_value(self, key):
         current = self.yamldata
-        try:
+        i = key.find(".")
+        while (i != -1):
+            subkey = key[:i]
+            current = current[subkey]
+            key = key[i + 1:]
             i = key.find(".")
-            while (i != -1):
-                subkey = key[:i]
-                current = current[subkey]
-                key = key[i + 1:]
-                i = key.find(".")
-        except:
-            raise
 
         return current[key]
 
     def remove_key(self, key):
         current = self.yamldata
-        try:
+        i = key.find(".")
+        while (i != -1):
+            subkey = key[:i]
+            current = current[subkey]
+            key = key[i + 1:]
             i = key.find(".")
-            while (i != -1):
-                subkey = key[:i]
-                current = current[subkey]
-                key = key[i + 1:]
-                i = key.find(".")
-        except:
-            raise
 
         if key in current:
             del current[key]

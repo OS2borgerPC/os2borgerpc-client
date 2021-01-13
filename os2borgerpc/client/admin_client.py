@@ -110,7 +110,7 @@ if __name__ == '__main__':
         addrs = netifaces.ifaddresses('eth0')
         mac = netifaces.ifaddresses('eth0')[netifaces.AF_LINK][0]['addr']
         uid = mac
-    except:
+    except Exception:
         # Don't use mac address, generate random number instead
         uid = 'pop'
     print(admin.register_new_computer('pip', uid, 'BIBOS', 'AAKB',

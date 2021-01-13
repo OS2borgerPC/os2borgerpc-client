@@ -10,24 +10,29 @@ import glob
 import re
 import subprocess
 import tempfile
+import pkg_resources
 
 from datetime import datetime
 
-from .config import OS2borgerPCConfig
+from .config import OS2borgerPCConfig, has_config
 
 from .admin_client import OS2borgerPCAdmin
 from .utils import upload_packages, filelock
 
-# Keep this in sync with setup.py
-OS2BORGERPC_CLIENT_VERSION = "0.0.5.1"
+
+# Keep this in sync with package name in setup.py
+OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
+    "os2borgerpc_client"
+).version
+DEFAULT_JOB_TIMEOUT = 900
 
 """
 Directory structure for storing OS2borgerPC jobs:
 /var/lib/os2borgerpc/jobs/<id> - Files related to job with id <id>
 /var/lib/os2borgerpc/jobs/<id>/attachments - files needed to execute the job
 /var/lib/os2borgerpc/jobs/<id>/executable - the program that executes the job
-/var/lib/os2borgerpc/jobs/<id>/parameters.json - json file containing parameters
-/var/lib/os2borgerpc/jobs/<id>/status - status file, created by the runtime system
+/var/lib/os2borgerpc/jobs/<id>/parameters.json - json file with parameters
+/var/lib/os2borgerpc/jobs/<id>/status - status file, created by runtime system
 /var/lib/os2borgerpc/jobs/<id>/started - created when job is stated
 /var/lib/os2borgerpc/jobs/<id>/finished - created when job is finished/failed
 /var/lib/os2borgerpc/jobs/<id>/output.log - Logfile with output from the job
@@ -42,9 +47,9 @@ files containing the events to be sent to the admin system.
 """
 SECURITY_DIR = '/etc/os2borgerpc/security'
 JOBS_DIR = '/var/lib/os2borgerpc/jobs'
-LOCK = JOBS_DIR + '/running'
+LOCK_FILE = JOBS_DIR + '/running'
 PACKAGE_LIST_FILE = '/var/lib/os2borgerpc/current_packages.list'
-PACKAGE_LINE_MATCHER = re.compile('ii\s+(\S+)\s+(\S+)\s+(.*)')
+PACKAGE_LINE_MATCHER = re.compile(r'ii\s+(\S+)\s+(\S+)\s+(.*)')
 
 
 class LocalJob(dict):
@@ -64,7 +69,7 @@ class LocalJob(dict):
                 path = path[:-1]
 
             # Find id from last part of path
-            m = re.match(".*/(\d+)$", path)
+            m = re.match(r".*/(\d+)$", path)
             if m is None:
                 raise ValueError("%s is not a valid path" % path)
             else:
@@ -262,7 +267,10 @@ def get_url_and_uid():
     config = OS2borgerPCConfig()
     uid = config.get_value('uid')
     config_data = config.get_data()
-    admin_url = config_data.get('admin_url', 'http://os2borgerpc.magenta-aps.dk/')
+    admin_url = config_data.get('admin_url')
+    if not admin_url:
+        print("Incorrect setup of OS2borgerPC admin client", file=sys.stderr)
+        return (None, None)
     xml_rpc_url = config_data.get('xml_rpc_url', '/admin-xml/')
     rpc_url = urllib.parse.urljoin(admin_url, xml_rpc_url)
     return(rpc_url, uid)
@@ -385,13 +393,15 @@ def get_instructions():
                     fh.write(s['executable_code'])
                 os.chmod(fpath, stat.S_IRWXU)
 
-    if ('do_send_package_info' in instructions and
-            instructions['do_send_package_info']):
-                try:
-                    # Send full package info to server.
-                    upload_packages()
-                except Exception as e:
-                    print("Package upload failed" + str(e), file=sys.stderr)
+    if (
+            'do_send_package_info' in instructions and
+            instructions['do_send_package_info']
+    ):
+        try:
+            # Send full package info to server.
+            upload_packages()
+        except Exception as e:
+            print("Package upload failed" + str(e), file=sys.stderr)
 
 
 def check_outstanding_packages():
@@ -427,6 +437,7 @@ def get_pending_job_dirs():
     result = []
     # Return job directories sorted by job ID, to make sure they get executed
     # in a predictable order
+
     def _numbered_dir(item):
         try:
             dirpath = os.path.join(JOBS_DIR, item)
@@ -511,7 +522,7 @@ def collect_security_events(now):
         csv_split = line.split(",")
         if datetime.strptime(csv_split[0],
                              '%Y%m%d%H%M') >= last_security_check:
-                data += line
+            data += line
 
     # Check if any new events occured
     if data != "":
@@ -539,8 +550,10 @@ def send_security_events(now):
 
             return result
         except Exception as e:
-            print("Error while sending security events:" + str(e),
-                    file=sys.stderr)
+            print(
+                "Error while sending security events:" + str(e),
+                file=sys.stderr
+            )
             return False
         finally:
             os.remove(SECURITY_DIR + "/security_check_" + now + ".csv")
@@ -557,30 +570,39 @@ def handle_security_events():
         send_security_events(now)
 
 
-def send_special_data():
+def send_config_value(key, value):
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
     remote.push_config_keys(uid, {
-        "_os2borgerpc.client_version": OS2BORGERPC_CLIENT_VERSION
+        key: value
     })
 
 
 def update_and_run():
     for folder in (JOBS_DIR, SECURITY_DIR,):
         os.makedirs(folder, mode=0o700, exist_ok=True)
-
+    config = OS2borgerPCConfig()
+    if has_config('job_timeout'):
+        job_timeout = config.get_value('job_timeout')
+    else:
+        job_timeout = DEFAULT_JOB_TIMEOUT
+        send_config_value('job_timeout', job_timeout)
     try:
-        with filelock(LOCK_FILE, max_age=900):
+        with filelock(LOCK_FILE, max_age=job_timeout):
             try:
-                send_special_data()
+                send_config_value(
+                    "_os2borgerpc.client_version",
+                    OS2BORGERPC_CLIENT_VERSION
+                )
+
                 get_instructions()
                 run_pending_jobs()
                 handle_security_events()
             except (IOError, socket.error):
-                print "Network error, exiting ..."
+                print("Network error, exiting ...")
     except IOError:
-        print "Couldn't get lock"
+        print("Couldn't get lock")
 
 
 if __name__ == '__main__':
