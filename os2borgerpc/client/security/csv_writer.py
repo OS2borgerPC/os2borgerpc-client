@@ -2,6 +2,7 @@ from datetime import datetime
 # Dont give timestamp as argument
 # csv format: TimeStamp, securityEventCode, Tec sum, Raw data
 
+
 def write_data(data):
     if not data:
         return
