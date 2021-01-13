@@ -127,29 +127,23 @@ class OS2borgerPCConfig():
 
     def get_value(self, key):
         current = self.yamldata
-        try:
+        i = key.find(".")
+        while (i != -1):
+            subkey = key[:i]
+            current = current[subkey]
+            key = key[i + 1:]
             i = key.find(".")
-            while (i != -1):
-                subkey = key[:i]
-                current = current[subkey]
-                key = key[i + 1:]
-                i = key.find(".")
-        except Exception:
-            raise
 
         return current[key]
 
     def remove_key(self, key):
         current = self.yamldata
-        try:
+        i = key.find(".")
+        while (i != -1):
+            subkey = key[:i]
+            current = current[subkey]
+            key = key[i + 1:]
             i = key.find(".")
-            while (i != -1):
-                subkey = key[:i]
-                current = current[subkey]
-                key = key[i + 1:]
-                i = key.find(".")
-        except Exception:
-            raise
 
         if key in current:
             del current[key]

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """This file contains utilities for communicating with the OS2borgerPC admin
 system."""
 
