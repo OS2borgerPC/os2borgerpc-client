@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import pkg_resources
 
+from pathlib import Path
 from datetime import datetime
 
 from .config import OS2borgerPCConfig, has_config
@@ -378,20 +379,22 @@ def get_instructions():
             local_job.save()
             local_job.logline("Job imported at %s" % datetime.now())
 
+    security_dir = Path(SECURITY_DIR)
     # if security dir exists
-    if os.path.isdir(SECURITY_DIR):
-        # Always remove old security scripts.
-        # Could be pc is moved to another group,
-        # and does not need security scripts any more.
-        os.popen('rm -f ' + SECURITY_DIR + '/s_*')
+    if security_dir.is_dir():
+        # Always remove the old security scripts -- perhaps this PC has been
+        # moved to another group and no longer needs them
+        for old_script in security_dir.glob("s_*"):
+            old_script.unlink()
 
-        # Import security scripts
+        # Import the fresh security scripts
         if 'security_scripts' in instructions:
             for s in instructions['security_scripts']:
-                fpath = SECURITY_DIR + '/s_' + str(s['name']).replace(' ', '')
-                with open(fpath, "wt") as fh:
+                script = security_dir.joinpath(
+                        "s_" + s["name"].replace(" ", ""))
+                with script.open("wt") as fh:
                     fh.write(s['executable_code'])
-                os.chmod(fpath, stat.S_IRWXU)
+                script.chmod(stat.S_IRWXU)
 
     if (
             'do_send_package_info' in instructions and
@@ -481,13 +484,13 @@ def run_security_scripts():
         log = open(SECURITY_DIR + "/security_log.txt", "a")
 
     for filename in glob.glob(SECURITY_DIR + '/s_*'):
-        log.write(">>>" + filename)
+        print(">>>" + filename, file=log)
         cmd = [filename]
         ret_val = subprocess.call(cmd, shell=True, stdout=log, stderr=log)
         if ret_val == 0:
-            log.write(">>>" + filename + " Succeeded")
+            print(">>>" + filename + " Succeeded", file=log)
         else:
-            log.write(">>>" + filename + " Failed")
+            print(">>>" + filename + " Failed", file=log)
 
     log.close()
 
