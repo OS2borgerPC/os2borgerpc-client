@@ -481,13 +481,13 @@ def run_security_scripts():
         log = open(SECURITY_DIR + "/security_log.txt", "a")
 
     for filename in glob.glob(SECURITY_DIR + '/s_*'):
-        log.write(">>>" + filename)
+        print(">>>" + filename, file=log)
         cmd = [filename]
         ret_val = subprocess.call(cmd, shell=True, stdout=log, stderr=log)
         if ret_val == 0:
-            log.write(">>>" + filename + " Succeeded")
+            print(">>>" + filename + " Succeeded", file=log)
         else:
-            log.write(">>>" + filename + " Failed")
+            print(">>>" + filename + " Failed", file=log)
 
     log.close()
 
