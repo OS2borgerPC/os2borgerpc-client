@@ -200,7 +200,7 @@ class LocalJob(dict):
         self['local_parameters'] = local_params
         params = self['parameters']
         del self['parameters']
-        for param in params:
+        for index, param in enumerate(params):
             if param['type'] == 'FILE':
                 # Make sure we have the directory
                 if not os.path.isdir(self.attachments_path):
@@ -209,7 +209,8 @@ class LocalJob(dict):
                 value = param['value']
                 _, _, path, _, _, _ = urllib.parse.urlparse(value)
                 basename = path[path.rfind("/") + 1:] or "file"
-                local_filename = self.attachments_path + '/' + basename
+                local_filename = os.path.join(
+                        self.attachments_path, str(index) + "_" + basename)
 
                 # urljoin does the right thing for both relative and absolute
                 # values of, er, value
