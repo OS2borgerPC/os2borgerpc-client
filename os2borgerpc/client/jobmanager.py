@@ -207,14 +207,17 @@ class LocalJob(dict):
                     os.mkdir(self.attachments_path)
 
                 value = param['value']
-                basename = value[value.rindex('/') + 1:]
-                filename = self.attachments_path + '/' + basename
-                # TODO this is probably not the right URL
+                _, _, path, _, _, _ = urllib.parse.urlparse(value)
+                basename = path[path.rfind("/") + 1:] or "file"
+                local_filename = self.attachments_path + '/' + basename
+
+                # urljoin does the right thing for both relative and absolute
+                # values of, er, value
                 full_url = urllib.parse.urljoin(admin_url, value)
                 remote_file = urllib.request.urlopen(full_url)
-                with open(filename, "wb") as attachment_fh:
+                with open(local_filename, "wb") as attachment_fh:
                     attachment_fh.write(remote_file.read())
-                local_params.append(filename)
+                local_params.append(local_filename)
             else:
                 local_params.append(param['value'])
 
