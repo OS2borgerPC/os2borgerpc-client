@@ -591,7 +591,10 @@ def update_and_run():
         os.makedirs(folder, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
     if has_config('job_timeout'):
-        job_timeout = config.get_value('job_timeout')
+        try:
+            job_timeout = int(config.get_value('job_timeout'))
+        except ValueError:
+            job_timeout = DEFAULT_JOB_TIMEOUT
     else:
         job_timeout = DEFAULT_JOB_TIMEOUT
         send_config_value('job_timeout', job_timeout)
