@@ -11,6 +11,7 @@ import re
 import subprocess
 import tempfile
 import pkg_resources
+import lsb_release
 
 from pathlib import Path
 from datetime import datetime
@@ -590,6 +591,12 @@ def update_and_run():
     for folder in (JOBS_DIR, SECURITY_DIR,):
         os.makedirs(folder, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
+    # Get OS info for configuration
+    release = lsb_release.get_distro_information()
+    if 'ID' in release:
+        os_name = release['ID']
+    if 'RELEASE' in release:
+        os_release = release['RELEASE']
     if has_config('job_timeout'):
         try:
             job_timeout = int(config.get_value('job_timeout'))
@@ -605,7 +612,8 @@ def update_and_run():
                     "_os2borgerpc.client_version",
                     OS2BORGERPC_CLIENT_VERSION
                 )
-
+                send_config_value("_os_release", os_release)
+                send_config_value("_os_name", os_name)
                 get_instructions()
                 run_pending_jobs()
                 handle_security_events()
