@@ -592,7 +592,7 @@ def update_and_run():
         os.makedirs(folder, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
     # Get OS info for configuration
-    release = lsb_release.get_os_release()
+    release = lsb_release.get_distro_information()
     if 'ID' in release:
         os_name = release['ID']
     if 'RELEASE' in release:
