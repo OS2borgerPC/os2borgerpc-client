@@ -23,7 +23,7 @@ New in this version:
 
 
 Version 1.0.1, January 5, 2021
--------------------------------
+------------------------------
 
 New in this version:
 
