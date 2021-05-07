@@ -6,7 +6,7 @@ with open("README", "r") as fh:
 setup(
     name='os2borgerpc_client',
     # Keep this in sync with os2borgerpc_client/jobmanager.py
-    version='1.1.2',
+    version='1.1.3',
     description='Client for the OS2borgerPC system',
     long_description=long_description,
     url='https://github.com/OS2borgerPC/',

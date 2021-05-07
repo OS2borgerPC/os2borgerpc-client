@@ -1,3 +1,12 @@
+Version 1.1.3, May 7, 2021
+-------------------------------
+
+New in this version:
+
+- Display Ubuntu version in computer's configuration.
+- Fix ValueError/conversion error from YAML.
+- Improved documentation.
+
 Version 1.1.2, January 29, 2021
 -------------------------------
 
