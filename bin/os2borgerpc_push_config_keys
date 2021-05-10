@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import traceback
 import sys
 
 from os2borgerpc.client.config import OS2borgerPCConfig
@@ -16,4 +17,5 @@ try:
             ' '.join(sorted(to_push.keys()))
         ))
 except Exception as e:
-    print("Error pushing config keys: ", str(e))
+    print("Error pushing config keys:")
+    traceback.print_exc()
