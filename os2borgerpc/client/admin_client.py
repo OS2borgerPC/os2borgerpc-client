@@ -5,6 +5,7 @@ import urllib.request
 
 
 def get_default_admin(verbose=False):
+    from os2borgerpc.client.config import OS2borgerPCConfig
     conf_data = OS2borgerPCConfig().get_data()
     admin_url = conf_data.get('admin_url', 'http://os2borgerpc.magenta-aps.dk')
     xml_rpc_url = conf_data.get('xml_rpc_url', '/admin-xml/')
@@ -97,7 +98,7 @@ class OS2borgerPCAdmin(object):
 if __name__ == '__main__':
     """Simple test suite."""
     import netifaces
-    from .config import OS2borgerPCConfig
+    from os2borgerpc.client.config import OS2borgerPCConfig
 
     admin_url = 'http://localhost:8080/admin-xml/'
     config_file = '/etc/os2borgerpc/os2borgerpc.conf'
