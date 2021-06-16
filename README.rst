@@ -11,5 +11,8 @@ and the offical Github project:
 
     https://github.com/OS2borgerPC/
 
+Read the documentation for this project in docs/ or at 
+`Read The Docs <https://os2borgerpc-client.readthedocs.io/>`_.
+
 This library is available to you according to the conditions in version 3 of
 the GNU General Public License. See the LICENSE file for details.
