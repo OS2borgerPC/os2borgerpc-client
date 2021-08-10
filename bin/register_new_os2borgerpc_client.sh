@@ -64,18 +64,19 @@ while true; do
     # - hostname
     #   Prompt user for new host name
     echo "Indtast venligst et nyt navn for denne computer:"
+    echo "Navnet skal have en længde ml. 1-63 tegn,"
+    echo "og gyldige tegn er a-z, 0-9 og bindestreg (-)."
+    # https://www.man7.org/linux/man-pages/man7/hostname.7.html
     read NEWHOSTNAME
-
-    if [[ -n "$NEWHOSTNAME" ]]
-    then
-        echo "$NEWHOSTNAME" > /tmp/newhostname
-        cp /tmp/newhostname /etc/hostname
-        set_os2borgerpc_config hostname "$NEWHOSTNAME"
-        hostname "$NEWHOSTNAME"
-        sed -i -e "s/$HOSTNAME/$NEWHOSTNAME/" /etc/hosts
-    else
-        set_os2borgerpc_config hostname "$HOSTNAME"
-    fi
+    while [[ ! "$NEWHOSTNAME" =~ ^[0-9a-z][0-9a-z-]{1,63}$ ]]; do
+      echo "Ugyldigt computernavn.  Prøv igen."
+      read NEWHOSTNAME
+    done
+    echo "$NEWHOSTNAME" > /tmp/newhostname
+    cp /tmp/newhostname /etc/hostname
+    set_os2borgerpc_config hostname "$NEWHOSTNAME"
+    hostname "$NEWHOSTNAME"
+    sed -i -e "s/$HOSTNAME/$NEWHOSTNAME/" /etc/hosts
 
 
     # - site
