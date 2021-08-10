@@ -72,8 +72,7 @@ while true; do
       echo "Ugyldigt computernavn.  Prøv igen."
       read NEWHOSTNAME
     done
-    echo "$NEWHOSTNAME" > /tmp/newhostname
-    cp /tmp/newhostname /etc/hostname
+    echo "$NEWHOSTNAME" > /etc/hostname
     set_os2borgerpc_config hostname "$NEWHOSTNAME"
     hostname "$NEWHOSTNAME"
     sed -i -e "s/$HOSTNAME/$NEWHOSTNAME/" /etc/hosts
