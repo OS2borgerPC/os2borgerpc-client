@@ -94,8 +94,8 @@ class OS2borgerPCAdmin(object):
     def push_security_events(self, pc_uid, csv_data):
         return self._rpc_srv.push_security_events(pc_uid, csv_data)
 
-    def cicero_login(self, username, password, site):
-        return self._rpc_srv.cicero_login(username, password, site)
+    def citizen_login(self, username, password, site):
+        return self._rpc_srv.citizen_login(username, password, site)
 
 
 if __name__ == '__main__':
