@@ -23,7 +23,7 @@ while true; do
     # Get hold of config parameters, connect to admin system.
 
     # Attempt to get shared config file from gateway.
-    # It this fails, the user must enter the corresponding data (site and 
+    # It this fails, the user must enter the corresponding data (site and
     # admin_url) manually.
     if [ "$(id -u)" != "0" ]
     then
@@ -36,7 +36,7 @@ while true; do
     if [[ -z "$GATEWAY_IP" ]]
     then
         # No gateway entered by user
-        GATEWAY_SITE="http://$(os2borgerpc_find_gateway 2> /dev/null)" 
+        GATEWAY_SITE="http://$(os2borgerpc_find_gateway 2> /dev/null)"
     else
         # User entered IP address or hostname - test if reachable by ping
         echo "Checker forbindelsen til gateway ..."
@@ -87,7 +87,7 @@ while true; do
 
     if [[ -z "$SITE" ]]
     then
-        echo "Indtast ID for det site, computeren skal tilmeldes:"
+        echo "Indtast UID for det site, computeren skal tilmeldes:"
         read -r SITE
     fi
 
@@ -108,7 +108,7 @@ while true; do
     	. /etc/os-release
         if [[ "$ID" = ubuntu ]]; then
 		if [[ "$VERSION_ID" = "14.04" ]]; then
-			DISTRO="BIBOS14.04" 
+			DISTRO="BIBOS14.04"
 		elif [[ "$VERSION_ID" = "12.04" ]]; then
 			DISTRO="BIBOS12.04"
 		elif [[ "$VERSION_ID" = "16.04" ]]; then
@@ -121,7 +121,7 @@ while true; do
 			read -r DISTRO
 		fi
         else
-		echo "Dette er ikke en Ubuntu maskine. OS2borgerPC systemet understøtter kun Ubuntu. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet."	
+		echo "Dette er ikke en Ubuntu maskine. OS2borgerPC systemet understøtter kun Ubuntu. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet."
 		echo "Indtast ID for PC'ens distribution:"
 	        read -r DISTRO
 	fi
