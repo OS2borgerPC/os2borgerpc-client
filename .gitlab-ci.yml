@@ -14,12 +14,10 @@ stages:
 Lint shell scripts:
   <<: *lint-default
   image: koalaman/shellcheck-alpine:latest
-  before_script:
-    - apk add fd
   script:
     - printf 'Running shellcheck:'
     - printf '%s\n' 'https://github.com/koalaman/shellcheck/wiki/Checks'
-    - fd . bin/ --exec shellcheck --exclude SC1071
+    - shellcheck --exclude SC1071 bin/*
     # Shellcheck the extension-less scripts in bin/
   #after_script:
   #  - fd --extension sh --exclude bin --exec shellcheck
@@ -30,19 +28,14 @@ Lint shell scripts:
 #  It's split into multiple script blocks as otherwise the pipeline succeeds even if the first command fails
 Lint python scripts:
   <<: *lint-default
-  image: python:3.6-alpine
+  image: python:3.8
   before_script:
     - pip install flake8
-    - apk add file fd
-#    - pip install black
+    - pip install black
+      # - pip install pydocstyle
   script:
-    - flake8 --version
-    - flake8 --exclude bin
-  # Avoid
-  after_script:
-    - fd . bin/ --exec sh -c 'if file "{}" | grep -iq python ; then flake8 "{}"; fi' 
-    #- for f in bin/*; do if file "$f" | grep -iq python ; then flake8 "$f"; fi; done
-    #- fd --extension py --exec black --diff
-    # for loop only checked a single file so using fd exec instead
-    #- for f in $(fd . bin/); do if file "$f" | grep -iq python ; then flake8 "$f"; fi; done
-    # flake8 extensionless python files in bin/
+    - flake8  --ignore=E203 .
+    - black --check --diff .
+    - grep -rl python3 bin/| xargs flake8
+    # Consider imposing pydocstyle.
+    #- pydocstyle

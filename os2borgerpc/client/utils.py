@@ -38,8 +38,7 @@ def filelock(file_name, max_age=None):
                 if lock_age >= max_age:
                     try:
                         msg = (
-                            "warning: " +
-                            f"forcibly acquiring lock file \"{file_name}\""
+                            "warning: " + f'forcibly acquiring lock file "{file_name}"'
                         )
                         print(msg, file=sys.stderr)
                         with open(pid_file, "rt") as fp:
@@ -69,10 +68,9 @@ def filelock(file_name, max_age=None):
 
 
 def get_upgrade_packages():
-    matcher = re.compile(r'Inst\s+(\S+)')
+    matcher = re.compile(r"Inst\s+(\S+)")
     prg = subprocess.Popen(
-        ['apt-get', '--just-print',  'dist-upgrade'],
-        stdout=subprocess.PIPE
+        ["apt-get", "--just-print", "dist-upgrade"], stdout=subprocess.PIPE
     )
     result = []
     for line in prg.stdout.readlines():
@@ -86,32 +84,33 @@ def upload_packages():
     config = OS2borgerPCConfig()
     data = config.get_data()
 
-    admin_url = data['admin_url']
-    xml_rpc_url = data.get('xml_rpc_url', '/admin-xml/')
-    uid = data['uid']
+    admin_url = data["admin_url"]
+    xml_rpc_url = data.get("xml_rpc_url", "/admin-xml/")
+    uid = data["uid"]
 
     admin = OS2borgerPCAdmin(urllib.parse.urljoin(admin_url, xml_rpc_url))
 
     # TODO: Make option to turn off/avoid repeating this.
-    os.system('get_package_data /tmp/packages.csv')
+    os.system("get_package_data /tmp/packages.csv")
 
     upgrade_pkgs = set(get_upgrade_packages())
 
-    with open('/tmp/packages.csv') as f:
-        package_reader = csv.reader(f, delimiter=';')
+    with open("/tmp/packages.csv") as f:
+        package_reader = csv.reader(f, delimiter=";")
         package_data = [
             {
-                'name': n,
-                'status': 'needs upgrade' if n in upgrade_pkgs else s,
-                'version': v,
-                'description': d
-            } for (n, s, v, d) in package_reader
+                "name": n,
+                "status": "needs upgrade" if n in upgrade_pkgs else s,
+                "version": v,
+                "description": d,
+            }
+            for (n, s, v, d) in package_reader
         ]
 
     try:
         admin.send_status_info(uid, package_data, None)
     except Exception as e:
-        print('Error:', str(e), file=sys.stderr)
+        print("Error:", str(e), file=sys.stderr)
         sys.exit(1)
 
 
@@ -119,23 +118,24 @@ def upload_dist_packages():
     config = OS2borgerPCConfig()
     data = config.get_data()
 
-    admin_url = data['admin_url']
-    xml_rpc_url = data.get('xml_rpc_url', '/admin-xml/')
-    distribution = data['distribution']
+    admin_url = data["admin_url"]
+    xml_rpc_url = data.get("xml_rpc_url", "/admin-xml/")
+    distribution = data["distribution"]
 
     admin = OS2borgerPCAdmin(urllib.parse.urljoin(admin_url, xml_rpc_url))
 
     # TODO: Make option to turn off/avoid repeating this.
-    os.system('get_package_data /tmp/packages.csv')
+    os.system("get_package_data /tmp/packages.csv")
 
-    with open('/tmp/packages.csv') as f:
-        package_reader = csv.reader(f, delimiter=';')
+    with open("/tmp/packages.csv") as f:
+        package_reader = csv.reader(f, delimiter=";")
         package_data = [
-            {'name': n, 'status': s, 'version': v, 'description': d} for
-            (n, s, v, d) in package_reader]
+            {"name": n, "status": s, "version": v, "description": d}
+            for (n, s, v, d) in package_reader
+        ]
 
     try:
         admin.upload_dist_packages(distribution, package_data)
     except Exception as e:
-        print('Error:', str(e), file=sys.stderr)
+        print("Error:", str(e), file=sys.stderr)
         sys.exit(1)

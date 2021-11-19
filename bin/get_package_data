@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ ! -z $1 ]
+if [ -n "$1" ]
 then
     FILENAME=$1
 else

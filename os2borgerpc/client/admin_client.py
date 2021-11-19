@@ -6,10 +6,11 @@ import urllib.request
 
 def get_default_admin(verbose=False):
     from os2borgerpc.client.config import OS2borgerPCConfig
+
     conf_data = OS2borgerPCConfig().get_data()
-    admin_url = conf_data.get('admin_url', 'http://os2borgerpc.magenta-aps.dk')
-    xml_rpc_url = conf_data.get('xml_rpc_url', '/admin-xml/')
-    return OS2borgerPCAdmin(''.join([admin_url, xml_rpc_url]), verbose=verbose)
+    admin_url = conf_data.get("admin_url", "http://os2borgerpc.magenta-aps.dk")
+    xml_rpc_url = conf_data.get("xml_rpc_url", "/admin-xml/")
+    return OS2borgerPCAdmin("".join([admin_url, xml_rpc_url]), verbose=verbose)
 
 
 # Thanks to A. Ellerton for this
@@ -29,14 +30,14 @@ class ProxyTransport(xmlrpc.client.Transport):
     A. Ellerton 2006-07-06
     """
 
-    def __init__(self, schema='http'):
+    def __init__(self, schema="http"):
         xmlrpc.client.Transport.__init__(self)
         self.schema = schema
 
     def request(self, host, handler, request_body, verbose):
 
         self.verbose = verbose
-        url = self.schema + '://' + host + handler
+        url = self.schema + "://" + host + handler
 
         request = urllib.request.Request(url)
         request.add_data(request_body)
@@ -48,7 +49,7 @@ class ProxyTransport(xmlrpc.client.Transport):
         proxy_handler = urllib.request.ProxyHandler()
         opener = urllib.request.build_opener(proxy_handler)
         f = opener.open(request)
-        return(self.parse_response(f))
+        return self.parse_response(f)
 
 
 class OS2borgerPCAdmin(object):
@@ -58,29 +59,25 @@ class OS2borgerPCAdmin(object):
         """Set up server proxy."""
         # TODO: Modify to use SSL.
         self._url = url
-        rpc_args = {'verbose': verbose, 'allow_none': True}
+        rpc_args = {"verbose": verbose, "allow_none": True}
         # Use proxy if present
-        if 'http_proxy' in os.environ:
-            rpc_args['transport'] = ProxyTransport(
-                schema=url[:url.index(':')]
-            )
+        if "http_proxy" in os.environ:
+            rpc_args["transport"] = ProxyTransport(schema=url[: url.index(":")])
 
         self._rpc_srv = xmlrpc.client.ServerProxy(self._url, **rpc_args)
 
-    def register_new_computer(self, mac, name, distribution, site,
-                              configuration):
+    def register_new_computer(self, mac, name, distribution, site, configuration):
         return self._rpc_srv.register_new_computer(
             mac, name, distribution, site, configuration
         )
 
     def upload_dist_packages(self, distribution_uid, package_data):
-        return self._rpc_srv.upload_dist_packages(distribution_uid,
-                                                  package_data)
+        return self._rpc_srv.upload_dist_packages(distribution_uid, package_data)
 
-    def send_status_info(self, pc_uid, package_data, job_data,
-                         update_required=None):
-        return self._rpc_srv.send_status_info(pc_uid, package_data, job_data,
-                                              update_required)
+    def send_status_info(self, pc_uid, package_data, job_data, update_required=None):
+        return self._rpc_srv.send_status_info(
+            pc_uid, package_data, job_data, update_required
+        )
 
     def get_instructions(self, pc_uid, update_data):
         return self._rpc_srv.get_instructions(pc_uid, update_data)
@@ -98,35 +95,34 @@ class OS2borgerPCAdmin(object):
         return self._rpc_srv.citizen_login(username, password, site)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     """Simple test suite."""
     import netifaces
     from os2borgerpc.client.config import OS2borgerPCConfig
 
-    admin_url = 'http://localhost:8080/admin-xml/'
-    config_file = '/etc/os2borgerpc/os2borgerpc.conf'
+    admin_url = "http://localhost:8080/admin-xml/"
+    config_file = "/etc/os2borgerpc/os2borgerpc.conf"
     config = OS2borgerPCConfig(config_file)
 
     admin = OS2borgerPCAdmin(admin_url)
 
     # Find HW address to use as UID
     try:
-        addrs = netifaces.ifaddresses('eth0')
-        mac = netifaces.ifaddresses('eth0')[netifaces.AF_LINK][0]['addr']
+        addrs = netifaces.ifaddresses("eth0")
+        mac = netifaces.ifaddresses("eth0")[netifaces.AF_LINK][0]["addr"]
         uid = mac
     except Exception:
         # Don't use mac address, generate random number instead
-        uid = 'pop'
-    print(admin.register_new_computer('pip', uid, 'BIBOS', 'AAKB',
-                                      config.get_data()))
+        uid = "pop"
+    print(admin.register_new_computer("pip", uid, "BIBOS", "AAKB", config.get_data()))
 
     # Find list of all packages for status.
     # os.system('get_package_data /tmp/packages.csv')
 
-    with open('/tmp/packages.csv') as f:
-        package_reader = csv.reader(f, delimiter=';')
+    with open("/tmp/packages.csv") as f:
+        package_reader = csv.reader(f, delimiter=";")
         package_data = [p for p in package_reader]
 
     print(admin.send_status_info(uid, package_data, None))
 
-    print(admin.get_instructions('pop'))
+    print(admin.get_instructions("pop"))

@@ -14,19 +14,19 @@ PORT = 42420
 def find_gateway(timeout=1):
     result = None
 
-    if config.has_config('gateway'):
+    if config.has_config("gateway"):
         # Done
-        ip = config.get_config('gateway')
+        ip = config.get_config("gateway")
         rc = os.system("ping -c 1 " + ip + " 2>&1 > /dev/null")
         if rc == 0:
             result = ip
         return result
 
     for if_name in netifaces.interfaces():
-        if if_name.startswith('eth'):
+        if if_name.startswith("eth"):
             interface = netifaces.ifaddresses(if_name)
             if netifaces.AF_INET in interface:
-                broadcast_addr = interface[netifaces.AF_INET][0]['broadcast']
+                broadcast_addr = interface[netifaces.AF_INET][0]["broadcast"]
             else:
                 continue
             # Now we know this IF is plugged in.
@@ -48,7 +48,7 @@ def find_gateway(timeout=1):
     return result
 
 
-if(__name__ == '__main__'):
+if __name__ == "__main__":
     s = find_gateway()
     if s is not None:
         print(s)
