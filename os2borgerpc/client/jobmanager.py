@@ -113,7 +113,7 @@ class LocalJob(dict):
 
     @property
     def sent_path(self):
-        return self.path + '/sent'
+        return self.path + "/sent"
 
     @property
     def log_path(self):
@@ -140,8 +140,8 @@ class LocalJob(dict):
         self.save_property_to_file("finished", self.finished_path)
 
     def mark_sent(self):
-        self['sent'] = str(datetime.now())
-        self.save_property_to_file('sent', self.sent_path)
+        self["sent"] = str(datetime.now())
+        self.save_property_to_file("sent", self.sent_path)
 
     def load_local_parameters(self):
         self.read_property_from_file("json_params", self.parameters_path)
@@ -155,11 +155,11 @@ class LocalJob(dict):
         if not os.path.isdir(self.path):
             raise ValueError("%s is not a directory" % self.path)
 
-        self.read_property_from_file('status', self.status_path)
-        self.read_property_from_file('started', self.started_path)
-        self.read_property_from_file('finished', self.finished_path)
-        self.read_property_from_file('log_output', self.log_path)
-        self.read_property_from_file('sent', self.sent_path)
+        self.read_property_from_file("status", self.status_path)
+        self.read_property_from_file("started", self.started_path)
+        self.read_property_from_file("finished", self.finished_path)
+        self.read_property_from_file("log_output", self.log_path)
+        self.read_property_from_file("sent", self.sent_path)
 
         if full_info is not False:
             self.read_property_from_file("executable_code", self.executable_path)
@@ -183,11 +183,11 @@ class LocalJob(dict):
             self[k] = data[k]
 
     def save(self):
-        self.save_property_to_file('executable_code', self.executable_path)
-        self.save_property_to_file('status', self.status_path)
-        self.save_property_to_file('started', self.started_path)
-        self.save_property_to_file('finished', self.finished_path)
-        self.save_property_to_file('sent', self.sent_path)
+        self.save_property_to_file("executable_code", self.executable_path)
+        self.save_property_to_file("status", self.status_path)
+        self.save_property_to_file("started", self.started_path)
+        self.save_property_to_file("finished", self.finished_path)
+        self.save_property_to_file("sent", self.sent_path)
 
         # Make sure executable is executable
         if os.path.exists(self.executable_path):
@@ -262,7 +262,9 @@ class LocalJob(dict):
             )
         )
         log.flush()
-        ret_val = subprocess.call(cmd, stdout=log, stderr=log, timeout=get_job_timeout())
+        ret_val = subprocess.call(
+            cmd, stdout=log, stderr=log, timeout=get_job_timeout()
+        )
         self.mark_finished()
         log.flush()
         if ret_val == 0:
@@ -291,9 +293,9 @@ def get_url_and_uid():
 def get_job_timeout():
     config = OS2borgerPCConfig()
 
-    if has_config('job_timeout'):
+    if has_config("job_timeout"):
         try:
-            job_timeout = int(config.get_value('job_timeout'))
+            job_timeout = int(config.get_value("job_timeout"))
         except ValueError:
             job_timeout = DEFAULT_JOB_TIMEOUT
     else:
@@ -310,6 +312,7 @@ def get_instructions():
         instructions = remote.get_instructions(uid)
     except Exception as e:
         print("Error while getting instructions:" + str(e), file=sys.stderr)
+
         # No instructions likely = no network. Do not continue.
         raise
 
@@ -370,7 +373,7 @@ def check_outstanding_packages():
         _, err = proc.communicate()
         package_updates, security_updates = [int(x) for x in err.split(";")]
         return (package_updates, security_updates)
-    except Exception as e:
+    except Exception:
         print("apt-check failed\n")
         traceback.print_exc()
         return None
@@ -410,7 +413,7 @@ def get_job_dirs(status_list):
         dirpath = os.path.join(JOBS_DIR, str(job_id))
         filename = os.path.join(dirpath, "status")
         if os.path.exists(filename):
-            with open(filename, 'r') as fh:
+            with open(filename, "r") as fh:
                 if fh.read() in status_list:
                     result.append(dirpath)
     return result
@@ -435,7 +438,7 @@ def send_unsent_jobs():
     for d in dirs:
         job = LocalJob(path=d)
         job.load_from_path()
-        if not "sent" in job or not job["sent"]:
+        if "sent" not in job or not job["sent"]:
             jobs.append(job)
 
     report_job_results([job.report_data for job in jobs])
@@ -460,9 +463,7 @@ def fail_unfinished_jobs():
         ):
             job.mark_finished()
             job.set_status("FAILED")
-            job.logline(">>> Failed due to timeout at %s\n" % (
-                job['finished'])
-            )
+            job.logline(">>> Failed due to timeout at %s\n" % (job["finished"]))
 
 
 def run_security_scripts():
