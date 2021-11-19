@@ -5,4 +5,3 @@ from os2borgerpc.client.utils import upload_dist_packages
 
 if __name__ == '__main__':
     upload_dist_packages()
-

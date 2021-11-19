@@ -36,8 +36,8 @@ Lint python scripts:
     - pip install black
       # - pip install pydocstyle
   script:
-    - flake8 .
+    - flake8  --ignore=E203 .
     - black --check --diff .
-    - python3 bin/| xargs flake8
+    - grep -rl python3 bin/| xargs flake8
     # Consider imposing pydocstyle.
     #- pydocstyle

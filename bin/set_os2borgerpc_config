@@ -6,9 +6,11 @@ from os2borgerpc.client.config import set_config
 
 DEBUG = True
 
+
 def print_usage():
     print()
     print("Usage: set_os2borgerpc_config <key> <value> [<config_file>]")
+
 
 args = len(sys.argv)
 val = None

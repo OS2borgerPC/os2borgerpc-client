@@ -16,6 +16,6 @@ try:
         print("The following keys were pushed to the admin system:\n\t%s" % (
             ' '.join(sorted(to_push.keys()))
         ))
-except Exception as e:
+except Exception:
     print("Error pushing config keys:")
     traceback.print_exc()
