@@ -9,7 +9,6 @@ import json
 import glob
 import re
 import subprocess
-import tempfile
 import pkg_resources
 import lsb_release
 
@@ -19,7 +18,7 @@ from datetime import datetime
 from .config import OS2borgerPCConfig, has_config
 
 from .admin_client import OS2borgerPCAdmin
-from .utils import upload_packages, filelock
+from .utils import filelock
 
 
 # Keep this in sync with package name in setup.py
@@ -50,8 +49,6 @@ files containing the events to be sent to the admin system.
 SECURITY_DIR = "/etc/os2borgerpc/security"
 JOBS_DIR = "/var/lib/os2borgerpc/jobs"
 LOCK_FILE = JOBS_DIR + "/running"
-PACKAGE_LIST_FILE = "/var/lib/os2borgerpc/current_packages.list"
-PACKAGE_LINE_MATCHER = re.compile(r"ii\s+(\S+)\s+(\S+)\s+(.*)")
 
 
 class LocalJob(dict):
@@ -279,71 +276,14 @@ def get_url_and_uid():
     return (rpc_url, uid)
 
 
-def get_packages_from_file(filename):
-    packages = {}
-
-    fh = open(filename, "r")
-    for line in fh.readlines():
-        m = PACKAGE_LINE_MATCHER.match(line)
-        if m is not None:
-            packages[m.group(1)] = {
-                "name": m.group(1),
-                "version": m.group(2),
-                "description": m.group(3),
-            }
-    return packages
-
-
-def get_local_package_diffs():
-    # If package list does not yet exist, generate it and return an empty
-    # result
-    if not os.path.isfile(PACKAGE_LIST_FILE):
-        # Write a new file
-        subprocess.call("dpkg -l | grep '^ii ' > %s" % PACKAGE_LIST_FILE, shell=True)
-        # And return nothing
-        return (None, [], [])
-
-    # Create a temporary file
-    tmpfilename = tempfile.mkstemp()[1]
-
-    # Generate a new file listdatetime
-    subprocess.call("dpkg -l | grep '^ii ' > %s" % tmpfilename, shell=True)
-
-    org_packages = get_packages_from_file(PACKAGE_LIST_FILE)
-    new_packages = get_packages_from_file(tmpfilename)
-
-    updated_or_installed = []
-    for name, value in new_packages.items():
-        if name in org_packages:
-            # Package is upgraded if version is not the same
-            if org_packages[name]["version"] != value["version"]:
-                updated_or_installed.append(value)
-            del org_packages[name]
-        else:
-            updated_or_installed.append(value)
-    # anything left over in org_packages must have been removed
-    removed = list(org_packages.keys())
-
-    return (tmpfilename, updated_or_installed, removed)
-
-
 def get_instructions():
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
-    tmpfilename, updated_pkgs, removed_pkgs = get_local_package_diffs()
-
     try:
-        instructions = remote.get_instructions(
-            uid, {"updated_packages": updated_pkgs, "removed_packages": removed_pkgs}
-        )
-        # Everything went well, overwrite old package list
-        if tmpfilename:
-            subprocess.call(["mv", tmpfilename, PACKAGE_LIST_FILE])
+        instructions = remote.get_instructions(uid)
     except Exception as e:
         print("Error while getting instructions:" + str(e), file=sys.stderr)
-        if tmpfilename:
-            subprocess.call(["rm", tmpfilename])
         # No instructions likely = no network. Do not continue.
         raise
 
@@ -389,13 +329,6 @@ def get_instructions():
                 with script.open("wt") as fh:
                     fh.write(s["executable_code"])
                 script.chmod(stat.S_IRWXU)
-
-    if "do_send_package_info" in instructions and instructions["do_send_package_info"]:
-        try:
-            # Send full package info to server.
-            upload_packages()
-        except Exception as e:
-            print("Package upload failed" + str(e), file=sys.stderr)
 
 
 def check_outstanding_packages():
