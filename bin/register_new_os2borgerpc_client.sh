@@ -114,37 +114,11 @@ while true; do
     unset DISTRO
     if [[ -r /etc/os-release ]]; then
         # shellcheck source=/dev/null
-    	  . /etc/os-release
-        if [[ "$ID" = ubuntu ]]; then
-            if [[ "$VERSION_ID" = "14.04" ]]; then
-                DISTRO="BIBOS14.04"
-            elif [[ "$VERSION_ID" = "12.04" ]]; then
-                DISTRO="BIBOS12.04"
-            elif [[ "$VERSION_ID" = "16.04" ]]; then
-                DISTRO="BIBOS16.04"
-            elif [[ "$VERSION_ID" = "20.04" ]]; then
-                DISTRO="os2borgerpc20.04"
-            elif [[ "$VERSION_ID" = "22.04" ]]; then
-                DISTRO="os2borgerpc22.04"
-            else
-                echo "Ubuntu versionen er ikke understøttet af OS2borgerPC systemet. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet." \
-                     "Indtast ID for PC'ens distribution:"
-                read -r DISTRO
-            fi
-        else
-            echo "Dette er ikke en Ubuntu maskine. OS2borgerPC systemet understøtter kun Ubuntu. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet." \
-                 "Indtast ID for PC'ens distribution:"
-            read -r DISTRO
-        fi
+    	. /etc/os-release
+        DISTRO="$ID""$VERSION_ID"
     else
         echo "Vi kan ikke se hvilket operativ system der er installeret." \
              "Indtast venligst ID for PC'ens distribution:"
-        read -r DISTRO
-    fi
-
-    if [[ -z "$DISTRO" ]]
-    then
-        echo "Indtast ID for PC'ens distribution"
         read -r DISTRO
     fi
 
