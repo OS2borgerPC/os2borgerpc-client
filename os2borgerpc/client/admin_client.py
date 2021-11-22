@@ -75,8 +75,8 @@ class OS2borgerPCAdmin(object):
             pc_uid, package_data, job_data, update_required
         )
 
-    def get_instructions(self, pc_uid, update_data=None):
-        return self._rpc_srv.get_instructions(pc_uid, update_data)
+    def get_instructions(self, pc_uid):
+        return self._rpc_srv.get_instructions(pc_uid)
 
     def get_proxy_setup(self, pc_uid):
         return self._rpc_srv.get_proxy_setup(pc_uid)
