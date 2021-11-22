@@ -1,5 +1,4 @@
 import os
-import csv
 import xmlrpc.client
 import urllib.request
 
@@ -71,16 +70,13 @@ class OS2borgerPCAdmin(object):
             mac, name, distribution, site, configuration
         )
 
-    def upload_dist_packages(self, distribution_uid, package_data):
-        return self._rpc_srv.upload_dist_packages(distribution_uid, package_data)
-
     def send_status_info(self, pc_uid, package_data, job_data, update_required=None):
         return self._rpc_srv.send_status_info(
             pc_uid, package_data, job_data, update_required
         )
 
-    def get_instructions(self, pc_uid, update_data):
-        return self._rpc_srv.get_instructions(pc_uid, update_data)
+    def get_instructions(self, pc_uid):
+        return self._rpc_srv.get_instructions(pc_uid)
 
     def get_proxy_setup(self, pc_uid):
         return self._rpc_srv.get_proxy_setup(pc_uid)
@@ -93,36 +89,3 @@ class OS2borgerPCAdmin(object):
 
     def citizen_login(self, username, password, site):
         return self._rpc_srv.citizen_login(username, password, site)
-
-
-if __name__ == "__main__":
-    """Simple test suite."""
-    import netifaces
-    from os2borgerpc.client.config import OS2borgerPCConfig
-
-    admin_url = "http://localhost:8080/admin-xml/"
-    config_file = "/etc/os2borgerpc/os2borgerpc.conf"
-    config = OS2borgerPCConfig(config_file)
-
-    admin = OS2borgerPCAdmin(admin_url)
-
-    # Find HW address to use as UID
-    try:
-        addrs = netifaces.ifaddresses("eth0")
-        mac = netifaces.ifaddresses("eth0")[netifaces.AF_LINK][0]["addr"]
-        uid = mac
-    except Exception:
-        # Don't use mac address, generate random number instead
-        uid = "pop"
-    print(admin.register_new_computer("pip", uid, "BIBOS", "AAKB", config.get_data()))
-
-    # Find list of all packages for status.
-    # os.system('get_package_data /tmp/packages.csv')
-
-    with open("/tmp/packages.csv") as f:
-        package_reader = csv.reader(f, delimiter=";")
-        package_data = [p for p in package_reader]
-
-    print(admin.send_status_info(uid, package_data, None))
-
-    print(admin.get_instructions("pop"))
