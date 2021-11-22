@@ -4,8 +4,6 @@ system."""
 
 import os
 import sys
-import re
-import subprocess
 import fcntl
 
 import contextlib
@@ -60,16 +58,3 @@ def filelock(file_name, max_age=None):
             os.unlink(pid_file)
             fcntl.lockf(fd, fcntl.LOCK_UN)
             os.unlink(file_name)
-
-
-def get_upgrade_packages():
-    matcher = re.compile(r"Inst\s+(\S+)")
-    prg = subprocess.Popen(
-        ["apt-get", "--just-print", "dist-upgrade"], stdout=subprocess.PIPE
-    )
-    result = []
-    for line in prg.stdout.readlines():
-        m = matcher.match(line.decode("utf-8"))
-        if m:
-            result.append(m.group(1))
-    return result
