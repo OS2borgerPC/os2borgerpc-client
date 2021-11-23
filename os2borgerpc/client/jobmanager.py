@@ -290,6 +290,7 @@ def get_url_and_uid():
     rpc_url = urllib.parse.urljoin(admin_url, xml_rpc_url)
     return (rpc_url, uid)
 
+
 def get_job_timeout():
     config = OS2borgerPCConfig()
 
