@@ -1,3 +1,14 @@
+Version 1.2.0, November 24, 2021
+--------------------------------
+
+New in this version:
+
+- Documentation now on Read The Docs, reference to this documentation in
+  README.
+- Ensure user enters a valid name for the newly registered PC.
+- New RPC endpoint (citizen_login) added to client to support integration with
+  existing library login systems such as Cicero.
+
 Version 1.1.3, May 7, 2021
 -------------------------------
 
