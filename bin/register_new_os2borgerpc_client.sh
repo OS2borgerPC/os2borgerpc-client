@@ -8,7 +8,7 @@ while true; do
         while true; do
             echo "[B]egynd forfra eller [S]top?"
             stty -echo
-            read -n 1 VALUE
+            read -rn 1 VALUE
             stty echo
             case "$VALUE" in
                 b|B)
@@ -23,7 +23,7 @@ while true; do
     # Get hold of config parameters, connect to admin system.
 
     # Attempt to get shared config file from gateway.
-    # It this fails, the user must enter the corresponding data (site and 
+    # It this fails, the user must enter the corresponding data (site and
     # admin_url) manually.
     if [ "$(id -u)" != "0" ]
     then
@@ -31,17 +31,16 @@ while true; do
     fi
 
     echo "Indtast gateway, tryk <ENTER> for ingen gateway eller automatisk opsætning"
-    read GATEWAY_IP
+    read -r GATEWAY_IP
 
     if [[ -z "$GATEWAY_IP" ]]
     then
         # No gateway entered by user
-        GATEWAY_SITE="http://$(os2borgerpc_find_gateway 2> /dev/null)" 
+        GATEWAY_SITE="http://$(os2borgerpc_find_gateway 2> /dev/null)"
     else
         # User entered IP address or hostname - test if reachable by ping
         echo "Checker forbindelsen til gateway ..."
-        ping -c 1 $GATEWAY_IP 2>1 > /dev/null
-        if [[ $? -ne 0 ]]
+        if ! ping -c 1 "$GATEWAY_IP" > /dev/null 2>&1
         then
             fatal "Ugyldig gateway-adresse ($GATEWAY_IP)" && continue || exit 1
         else
@@ -64,18 +63,18 @@ while true; do
     # - hostname
     #   Prompt user for new host name
     echo "Indtast venligst et nyt navn for denne computer:"
-    read NEWHOSTNAME
-
-    if [[ -n "$NEWHOSTNAME" ]]
-    then
-        echo "$NEWHOSTNAME" > /tmp/newhostname
-        cp /tmp/newhostname /etc/hostname
-        set_os2borgerpc_config hostname "$NEWHOSTNAME"
-        hostname "$NEWHOSTNAME"
-        sed -i -e "s/$HOSTNAME/$NEWHOSTNAME/" /etc/hosts
-    else
-        set_os2borgerpc_config hostname "$HOSTNAME"
-    fi
+    echo "Navnet skal have en længde ml. 1-63 tegn,"
+    echo "og gyldige tegn er a-z, 0-9 og bindestreg (-)."
+    # https://www.man7.org/linux/man-pages/man7/hostname.7.html
+    read -r NEWHOSTNAME
+    while [[ ! "$NEWHOSTNAME" =~ ^[0-9a-z][0-9a-z-]{1,63}$ ]]; do
+      echo "Ugyldigt computernavn.  Prøv igen."
+      read -r NEWHOSTNAME
+    done
+    echo "$NEWHOSTNAME" > /etc/hostname
+    set_os2borgerpc_config hostname "$NEWHOSTNAME"
+    hostname "$NEWHOSTNAME"
+    sed -i -e "s/$HOSTNAME/$NEWHOSTNAME/" /etc/hosts
 
 
     # - site
@@ -88,13 +87,13 @@ while true; do
 
     if [[ -z "$SITE" ]]
     then
-        echo "Indtast ID for det site, computeren skal tilmeldes:"
-        read SITE
+        echo "Indtast UID for det site, computeren skal tilmeldes:"
+        read -r SITE
     fi
 
     if [[ -n "$SITE" ]]
     then
-        set_os2borgerpc_config site $SITE
+        set_os2borgerpc_config site "$SITE"
     else
         fatal "Computeren kan ikke registreres uden site" && continue || exit 1
     fi
@@ -105,10 +104,11 @@ while true; do
 
     unset DISTRO
     if [[ -r /etc/os-release ]]; then
+        # shellcheck source=/dev/null
     	. /etc/os-release
         if [[ "$ID" = ubuntu ]]; then
 		if [[ "$VERSION_ID" = "14.04" ]]; then
-			DISTRO="BIBOS14.04" 
+			DISTRO="BIBOS14.04"
 		elif [[ "$VERSION_ID" = "12.04" ]]; then
 			DISTRO="BIBOS12.04"
 		elif [[ "$VERSION_ID" = "16.04" ]]; then
@@ -118,23 +118,23 @@ while true; do
 		else
 			echo "Ubuntu versionen er ikke understøttet af OS2borgerPC systemet. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet."
 			echo "Indtast ID for PC'ens distribution:"
-			read DISTRO
+			read -r DISTRO
 		fi
         else
-		echo "Dette er ikke en Ubuntu maskine. OS2borgerPC systemet understøtter kun Ubuntu. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet."	
+		echo "Dette er ikke en Ubuntu maskine. OS2borgerPC systemet understøtter kun Ubuntu. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet."
 		echo "Indtast ID for PC'ens distribution:"
-	        read DISTRO
+	        read -r DISTRO
 	fi
     else
     	echo "Vi kan ikke se hvilket operativ system der er installeret."
         echo "Indtast venligst ID for PC'ens distribution:"
-        read DISTRO
+        read -r DISTRO
     fi
 
     if [[ -z "$DISTRO" ]]
     then
         echo "Indtast ID for PC'ens distribution"
-        read DISTRO
+        read -r DISTRO
     fi
 
     echo "Distributions ID: $DISTRO"
@@ -144,7 +144,7 @@ while true; do
 
     # - mac
     #   Get the mac-address
-    set_os2borgerpc_config mac `ip addr | grep link/ether | awk 'FNR==1{print $2}'`
+    set_os2borgerpc_config mac "$(ip addr | grep link/ether | awk 'FNR==1{print $2}')"
 
 
     # - admin_url
@@ -158,7 +158,7 @@ while true; do
     then
         ADMIN_URL="https://os2borgerpc-admin.magenta.dk"
         echo "Indtast admin-url hvis det ikke er $ADMIN_URL"
-        read NEW_ADMIN_URL
+        read -r NEW_ADMIN_URL
         if [[ -n "$NEW_ADMIN_URL" ]]
         then
             ADMIN_URL="$NEW_ADMIN_URL"
@@ -173,10 +173,10 @@ while true; do
     fi
 
     # Now setup cron job
-    if [[ -f $(which jobmanager) ]]
+    if [[ -f $(command -v jobmanager) ]]
     then
         echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' > /etc/cron.d/os2borgerpc-jobmanager
-        echo "*/5 * * * * root $(which jobmanager)" >> /etc/cron.d/os2borgerpc-jobmanager
+        echo "*/5 * * * * root $(command -v jobmanager)" >> /etc/cron.d/os2borgerpc-jobmanager
     fi
 
     break

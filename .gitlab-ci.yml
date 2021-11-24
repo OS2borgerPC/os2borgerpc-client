@@ -1,0 +1,41 @@
+# Chronologically specify the pipeline stages to run
+stages:
+  - lint
+
+# Common settings for linters to avoid code repetition
+# Needs can be used to specify dependencies
+# Allow failure is whether the pipeline succeeds on failure or not
+.lint-default: &lint-default
+  stage: lint
+  needs: []
+  services: []
+  allow_failure: false
+
+Lint shell scripts:
+  <<: *lint-default
+  image: koalaman/shellcheck-alpine:latest
+  script:
+    - printf 'Running shellcheck:'
+    - printf '%s\n' 'https://github.com/koalaman/shellcheck/wiki/Checks'
+    - shellcheck --exclude SC1071 bin/*
+    # Shellcheck the extension-less scripts in bin/
+  #after_script:
+  #  - fd --extension sh --exclude bin --exec shellcheck
+  # shellcheck sh files with extensions everywhere else
+
+#  Keep the python version in sync with what's in production
+#  Consider using black instead?
+#  It's split into multiple script blocks as otherwise the pipeline succeeds even if the first command fails
+Lint python scripts:
+  <<: *lint-default
+  image: python:3.8
+  before_script:
+    - pip install flake8
+    - pip install black
+      # - pip install pydocstyle
+  script:
+    - flake8  --ignore=E203 .
+    - black --check --diff .
+    - grep -rl python3 bin/| xargs flake8
+    # Consider imposing pydocstyle.
+    #- pydocstyle

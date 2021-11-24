@@ -3,10 +3,7 @@ import os.path
 import yaml
 import stat
 
-DEFAULT_CONFIG_FILES = [
-        "/etc/os2borgerpc/os2borgerpc.conf",
-        "/etc/bibos/bibos.conf"
-]
+DEFAULT_CONFIG_FILES = ["/etc/os2borgerpc/os2borgerpc.conf", "/etc/bibos/bibos.conf"]
 
 DEBUG = True  # TODO: Get from settings file.
 
@@ -38,7 +35,7 @@ def set_config(key, value, filenames=DEFAULT_CONFIG_FILES):
     conf.save()
 
 
-class OS2borgerPCConfig():
+class OS2borgerPCConfig:
     def __init__(self, filenames=DEFAULT_CONFIG_FILES):
         """Create new configuration object. Each configuration object is
         defined by its ownership of exactly one configuration file."""
@@ -109,14 +106,14 @@ class OS2borgerPCConfig():
         current = self.yamldata
 
         i = key.find(".")
-        while (i != -1):
+        while i != -1:
             subkey = key[:i]
             try:
                 current = current[subkey]
             except (KeyError, TypeError):
                 current[subkey] = {}
                 current = current[subkey]
-            key = key[i + 1:]
+            key = key[i + 1 :]
             i = key.find(".")
 
         try:
@@ -128,10 +125,10 @@ class OS2borgerPCConfig():
     def get_value(self, key):
         current = self.yamldata
         i = key.find(".")
-        while (i != -1):
+        while i != -1:
             subkey = key[:i]
             current = current[subkey]
-            key = key[i + 1:]
+            key = key[i + 1 :]
             i = key.find(".")
 
         return current[key]
@@ -139,10 +136,10 @@ class OS2borgerPCConfig():
     def remove_key(self, key):
         current = self.yamldata
         i = key.find(".")
-        while (i != -1):
+        while i != -1:
             subkey = key[:i]
             current = current[subkey]
-            key = key[i + 1:]
+            key = key[i + 1 :]
             i = key.find(".")
 
         if key in current:
@@ -156,4 +153,5 @@ class OS2borgerPCConfig():
                     yield from _get_at(v, here)
                 else:
                     yield (".".join(here), v)
+
         return dict(_get_at(self.yamldata, []))

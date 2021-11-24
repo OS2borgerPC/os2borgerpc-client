@@ -30,20 +30,3 @@ try:
 except Exception as e:
     print('Error:', str(e), file=sys.stderr)
     sys.exit(1)
-
-# Computer created, now upload package data.
-
-# TODO: Do NOT do this. Factor to new program.
-"""
-os.system('get_package_data /tmp/packages.csv')
-
-with open('/tmp/packages.csv') as f:
-    package_reader = csv.reader(f, delimiter=';')
-    package_data = [p for p in package_reader]
-
-try:
-    admin.send_status_info(uid, package_data, None)
-except Exception as e:
-    print('Error:', str(e), file=sys.stderr)
-    sys.exit(1)
-"""

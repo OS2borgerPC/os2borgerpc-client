@@ -11,4 +11,3 @@ if not os.geteuid() == 0:
 # We are root!
 
 update_and_run()
-
