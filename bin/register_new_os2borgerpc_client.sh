@@ -3,7 +3,7 @@
 SHARED_CONFIG="/tmp/os2borgerpc.conf"
 
 # Current directory
-DIR=$(dirname ${BASH_SOURCE[0]})
+DIR=$(dirname "${BASH_SOURCE[0]}")
 
 while true; do
     fatal() {
