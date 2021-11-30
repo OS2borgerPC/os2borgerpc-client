@@ -24,6 +24,7 @@ setup(
         "bin/jobmanager",
         "bin/register_new_os2borgerpc_client.sh",
         "bin/admin_connect.sh",
+        "bin/randomize_jobmanager.sh",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
