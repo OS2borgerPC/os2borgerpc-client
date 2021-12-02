@@ -547,7 +547,7 @@ def send_security_events(now):
 
             return result
         except Exception:
-            print("Error while sending security events")
+            print("Error while sending security events", file=sys.stderr)
             traceback.print_exc()
             return False
         finally:
