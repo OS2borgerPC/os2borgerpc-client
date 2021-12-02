@@ -375,7 +375,7 @@ def check_outstanding_packages():
         package_updates, security_updates = [int(x) for x in err.split(";")]
         return (package_updates, security_updates)
     except Exception:
-        print("apt-check failed\n")
+        print("apt-check failed\n", file=sys.stderr)
         traceback.print_exc()
         return None
 
