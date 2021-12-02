@@ -11,6 +11,7 @@ import re
 import subprocess
 import pkg_resources
 import lsb_release
+import traceback
 
 from pathlib import Path
 from datetime import datetime
@@ -34,8 +35,9 @@ Directory structure for storing OS2borgerPC jobs:
 /var/lib/os2borgerpc/jobs/<id>/executable - the program that executes the job
 /var/lib/os2borgerpc/jobs/<id>/parameters.json - json file with parameters
 /var/lib/os2borgerpc/jobs/<id>/status - status file, created by runtime system
-/var/lib/os2borgerpc/jobs/<id>/started - created when job is stated
+/var/lib/os2borgerpc/jobs/<id>/started - created when job is started
 /var/lib/os2borgerpc/jobs/<id>/finished - created when job is finished/failed
+/var/lib/os2borgerpc/jobs/<id>/sent - created when job is sent back to server
 /var/lib/os2borgerpc/jobs/<id>/output.log - Logfile with output from the job
 """
 
@@ -110,6 +112,10 @@ class LocalJob(dict):
         return self.path + "/finished"
 
     @property
+    def sent_path(self):
+        return self.path + "/sent"
+
+    @property
     def log_path(self):
         return self.path + "/output.log"
 
@@ -133,6 +139,10 @@ class LocalJob(dict):
         self["finished"] = str(datetime.now())
         self.save_property_to_file("finished", self.finished_path)
 
+    def mark_sent(self):
+        self["sent"] = str(datetime.now())
+        self.save_property_to_file("sent", self.sent_path)
+
     def load_local_parameters(self):
         self.read_property_from_file("json_params", self.parameters_path)
         if "json_params" in self:
@@ -149,6 +159,7 @@ class LocalJob(dict):
         self.read_property_from_file("started", self.started_path)
         self.read_property_from_file("finished", self.finished_path)
         self.read_property_from_file("log_output", self.log_path)
+        self.read_property_from_file("sent", self.sent_path)
 
         if full_info is not False:
             self.read_property_from_file("executable_code", self.executable_path)
@@ -159,6 +170,7 @@ class LocalJob(dict):
             with open(file_path, "rt") as fh:
                 self[prop] = fh.read()
         except IOError:
+            traceback.print_exc()
             pass
 
     def save_property_to_file(self, prop, file_path):
@@ -175,6 +187,7 @@ class LocalJob(dict):
         self.save_property_to_file("status", self.status_path)
         self.save_property_to_file("started", self.started_path)
         self.save_property_to_file("finished", self.finished_path)
+        self.save_property_to_file("sent", self.sent_path)
 
         # Make sure executable is executable
         if os.path.exists(self.executable_path):
@@ -249,7 +262,9 @@ class LocalJob(dict):
             )
         )
         log.flush()
-        ret_val = subprocess.call(cmd, stdout=log, stderr=log)
+        ret_val = subprocess.call(
+            cmd, stdout=log, stderr=log, timeout=get_job_timeout()
+        )
         self.mark_finished()
         log.flush()
         if ret_val == 0:
@@ -276,6 +291,20 @@ def get_url_and_uid():
     return (rpc_url, uid)
 
 
+def get_job_timeout():
+    config = OS2borgerPCConfig()
+
+    if has_config("job_timeout"):
+        try:
+            job_timeout = int(config.get_value("job_timeout"))
+        except ValueError:
+            job_timeout = DEFAULT_JOB_TIMEOUT
+    else:
+        job_timeout = DEFAULT_JOB_TIMEOUT
+
+    return job_timeout
+
+
 def get_instructions():
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
@@ -284,6 +313,7 @@ def get_instructions():
         instructions = remote.get_instructions(uid)
     except Exception as e:
         print("Error while getting instructions:" + str(e), file=sys.stderr)
+
         # No instructions likely = no network. Do not continue.
         raise
 
@@ -344,8 +374,9 @@ def check_outstanding_packages():
         _, err = proc.communicate()
         package_updates, security_updates = [int(x) for x in err.split(";")]
         return (package_updates, security_updates)
-    except Exception as e:
-        print("apt-check failed" + str(e), file=sys.stderr)
+    except Exception:
+        print("apt-check failed\n", file=sys.stderr)
+        traceback.print_exc()
         return None
 
 
@@ -364,7 +395,7 @@ def flat_map(iterable, function):
             yield v
 
 
-def get_pending_job_dirs():
+def get_job_dirs(status_list):
     result = []
     # Return job directories sorted by job ID, to make sure they get executed
     # in a predictable order
@@ -384,13 +415,13 @@ def get_pending_job_dirs():
         filename = os.path.join(dirpath, "status")
         if os.path.exists(filename):
             with open(filename, "r") as fh:
-                if fh.read() == "SUBMITTED":
+                if fh.read() in status_list:
                     result.append(dirpath)
     return result
 
 
 def run_pending_jobs():
-    dirs = get_pending_job_dirs()
+    dirs = get_job_dirs(status_list=["SUBMITTED"])
     results = []
 
     for d in dirs:
@@ -399,6 +430,41 @@ def run_pending_jobs():
         results.append(job.report_data)
 
     report_job_results(results)
+
+
+def send_unsent_jobs():
+    dirs = get_job_dirs(status_list=["DONE", "FAILED"])
+    jobs = []
+
+    for d in dirs:
+        job = LocalJob(path=d)
+        job.load_from_path()
+        if "sent" not in job or not job["sent"]:
+            jobs.append(job)
+
+    report_job_results([job.report_data for job in jobs])
+
+    for job in jobs:
+        job.mark_sent()
+
+
+def fail_unfinished_jobs():
+    dirs = get_job_dirs(status_list=["RUNNING"])
+    now = datetime.now()
+
+    for d in dirs:
+        job = LocalJob(path=d)
+        job.load_from_path()
+        if (
+            "started" in job
+            and (
+                now - datetime.strptime(job["started"], "%Y-%m-%d %H:%M:%S.%f")
+            ).seconds
+            > get_job_timeout()
+        ):
+            job.mark_finished()
+            job.set_status("FAILED")
+            job.logline(">>> Failed due to timeout at %s\n" % (job["finished"]))
 
 
 def run_security_scripts():
@@ -480,8 +546,9 @@ def send_security_events(now):
                 os.remove(SECURITY_DIR + "/securityevent.csv")
 
             return result
-        except Exception as e:
-            print("Error while sending security events:" + str(e), file=sys.stderr)
+        except Exception:
+            print("Error while sending security events", file=sys.stderr)
+            traceback.print_exc()
             return False
         finally:
             os.remove(SECURITY_DIR + "/security_check_" + now + ".csv")
@@ -535,12 +602,16 @@ def update_and_run():
                 send_config_value("_os_release", os_release)
                 send_config_value("_os_name", os_name)
                 get_instructions()
+                fail_unfinished_jobs()
+                send_unsent_jobs()
                 run_pending_jobs()
                 handle_security_events()
             except (IOError, socket.error):
                 print("Network error, exiting ...")
+                traceback.print_exc()
     except IOError:
         print("Couldn't get lock")
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
