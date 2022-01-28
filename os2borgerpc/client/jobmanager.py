@@ -169,8 +169,7 @@ class LocalJob(dict):
         try:
             with open(file_path, "rt") as fh:
                 self[prop] = fh.read()
-        except IOError:
-            traceback.print_exc()
+        except OSError:
             pass
 
     def save_property_to_file(self, prop, file_path):
@@ -473,7 +472,7 @@ def run_security_scripts():
             os.remove(SECURITY_DIR + "/security_log.txt")
 
         log = open(SECURITY_DIR + "/security_log.txt", "a")
-    except (OSError, IOError):
+    except (OSError):
         # File does not exists, so we create it.
         os.mknod(SECURITY_DIR + "/security_log.txt")
         log = open(SECURITY_DIR + "/security_log.txt", "a")
@@ -496,7 +495,7 @@ def collect_security_events(now):
 
     try:
         check_file = open(SECURITY_DIR + "/lastcheck.txt", "r")
-    except IOError:
+    except OSError:
         # File does not exists, so we create it.
         os.mknod(SECURITY_DIR + "/lastcheck.txt")
         check_file = open(SECURITY_DIR + "/lastcheck.txt", "r")
@@ -510,7 +509,7 @@ def collect_security_events(now):
 
     try:
         csv_file = open(SECURITY_DIR + "/securityevent.csv", "r")
-    except IOError:
+    except OSError:
         # File does not exist. No events occured, since last check.
         return False
 
@@ -552,7 +551,7 @@ def send_security_events(now):
             return False
         finally:
             os.remove(SECURITY_DIR + "/security_check_" + now + ".csv")
-    except IOError:
+    except OSError:
         # File does not exist. No events occured, since last check.
         return False
 
@@ -606,10 +605,10 @@ def update_and_run():
                 send_unsent_jobs()
                 run_pending_jobs()
                 handle_security_events()
-            except (IOError, socket.error):
+            except (OSError, socket.error):
                 print("Network error, exiting ...")
                 traceback.print_exc()
-    except IOError:
+    except OSError:
         print("Couldn't get lock")
         traceback.print_exc()
 
