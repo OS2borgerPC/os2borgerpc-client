@@ -1,3 +1,13 @@
+Version 1.3.0, February  14, 2022
+---------------------------------
+
+New in this version:
+
+- Ensure job status never goes unreported.
+- Checkin times now randomized when PC is registered with the admin
+  system.
+
+
 Version 1.2.0, November 24, 2021
 --------------------------------
 

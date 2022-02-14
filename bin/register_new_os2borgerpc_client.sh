@@ -2,6 +2,9 @@
 
 SHARED_CONFIG="/tmp/os2borgerpc.conf"
 
+# Current directory
+DIR=$(dirname "${BASH_SOURCE[0]}")
+
 while true; do
     fatal() {
         echo "Kritisk fejl, stopper:" "$@"
@@ -178,6 +181,11 @@ while true; do
         echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' > /etc/cron.d/os2borgerpc-jobmanager
         echo "*/5 * * * * root $(command -v jobmanager)" >> /etc/cron.d/os2borgerpc-jobmanager
     fi
+
+    # Now randomize cron job to avoid everybody hitting the server every
+    # five minutes.
+    "$DIR/randomize_jobmanager.sh" 5
+
 
     break
 done
