@@ -244,9 +244,9 @@ class LocalJob(dict):
                 remote_file = urllib.request.urlopen(full_url)
                 with open(local_filename, "wb") as attachment_fh:
                     attachment_fh.write(remote_file.read())
-                local_params.append(local_filename)
+                local_params.append({"type": param["type"], "value": local_filename})
             else:
-                local_params.append(param["value"])
+                local_params.append(param)
 
     def log(self, message):
         """Write message to log file."""
@@ -270,13 +270,21 @@ class LocalJob(dict):
         self.load_local_parameters()
         self.set_status("RUNNING")
         cmd = [self.executable_path]
-        cmd.extend(self["local_parameters"])
+        log_params = []
+
+        for param in self["local_parameters"]:
+            cmd.append(param["value"])
+            if param["type"] == "PASSWORD":
+                log_params.append("•••••")
+            else:
+                log_params.append(param["value"])
+
         self.mark_started()
         log.write(
             ">>> Starting process '%s' with arguments [%s] at %s\n"
             % (
                 self.executable_path,
-                ", ".join(self["local_parameters"]),
+                ", ".join(log_params),
                 self["started"],
             )
         )
@@ -294,6 +302,7 @@ class LocalJob(dict):
             log.write(
                 ">>> Failed with exit status %s at %s\n" % (ret_val, self["finished"])
             )
+        os.remove(self.parameters_path)
         log.close()
 
 
