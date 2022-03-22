@@ -185,7 +185,7 @@ while true; do
     fi
 
     # Now randomize cron job to avoid everybody hitting the server every five minutes.
-    "$DIR/randomize_jobmanager.sh" 5
+    "$DIR/randomize_jobmanager.sh" 5 > /dev/null
 
 
     break
