@@ -77,7 +77,9 @@ while true; do
     echo "$NEWHOSTNAME" > /etc/hostname
     set_os2borgerpc_config hostname "$NEWHOSTNAME"
     hostname "$NEWHOSTNAME"
-    sed -i -e "s/$HOSTNAME/$NEWHOSTNAME/" /etc/hosts
+
+    sed --in-place /127.0.1.1/d /etc/hosts
+    sed --in-place "2i 127.0.1.1	$NEWHOSTNAME" /etc/hosts
 
 
     # - site
