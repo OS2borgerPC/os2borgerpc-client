@@ -1,6 +1,7 @@
 # Chronologically specify the pipeline stages to run
 stages:
   - lint
+  - test
 
 # Common settings for linters to avoid code repetition
 # Needs can be used to specify dependencies
@@ -39,3 +40,16 @@ Lint python scripts:
     - grep -rl python3 bin/| xargs flake8
     # Consider imposing pydocstyle.
     #- pydocstyle
+
+.test-default: &test-default
+  stage: test
+  needs: []
+  dependencies: []
+
+Unittest:
+  <<: *test-default
+  image: python:3.8
+  before_script:
+    - pip install tox
+  script:
+    - tox
