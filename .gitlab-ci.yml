@@ -53,3 +53,4 @@ Unittest:
     - pip install tox
   script:
     - tox
+  coverage: '/TOTAL.*\s+(\d+%)$/'
