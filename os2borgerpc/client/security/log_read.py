@@ -16,7 +16,7 @@ def read(sec, fname):
                 str(now.year) + " " + line_date_portion, "%Y %b  %d %H:%M:%S"
             )
             # Detect lines from within the last x seconds to now.
-            if ((datetime.now() - timedelta(seconds=sec)) <= log_entry_date <= now):
+            if (datetime.now() - timedelta(seconds=sec)) <= log_entry_date <= now:
                 data = line + data
 
     return data
