@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 # Search syslog from the end to a certain time
 # Syslog is by Ubuntu default rotated daily
@@ -6,16 +6,17 @@ from datetime import date, datetime, timedelta
 
 def read(sec, fname):
     data = ""
-    year = date.today().year
+    now = datetime.now()
 
     with open(fname) as f:
         for line in reversed(f.readlines()):
             line = str(line.replace("\0", ""))
-            date_object = datetime.strptime(
-                str(year) + " " + line[:15], "%Y %b  %d %H:%M:%S"
+            line_date_portion = line[:15]
+            log_entry_date = datetime.strptime(
+                str(now.year) + " " + line_date_portion, "%Y %b  %d %H:%M:%S"
             )
-            # Detect lines from within the last x seconds
-            if (datetime.now() - timedelta(seconds=sec)) <= date_object:
+            # Detect lines from within the last x seconds to now.
+            if (datetime.now() - timedelta(seconds=sec)) <= log_entry_date <= now:
                 data = line + data
 
     return data
