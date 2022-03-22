@@ -1,5 +1,4 @@
-from datetime import date, datetime, timedelta
-import calendar
+from datetime import datetime, timedelta
 
 # Search syslog from the end to a certain time
 # Syslog is by Ubuntu default rotated daily
