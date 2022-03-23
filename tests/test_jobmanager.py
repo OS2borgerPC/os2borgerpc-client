@@ -1,3 +1,4 @@
+import stat
 from datetime import (
     datetime,
     timedelta,
@@ -90,4 +91,63 @@ class TestJobManager:
         assert (
             unfinished_job.join("output.log").read()
             == ">>> Failed due to timeout at 2022-01-01 12:00:00.000001\n"
+        )
+
+    @freeze_time(
+        datetime(year=2022, month=1, day=1, hour=12, minute=0, second=0, microsecond=1)
+    )
+    def test_run_pending_jobs_success(self, tmpdir):
+        now = datetime.now()
+        report_job_results_mock = mock.MagicMock()
+        jobmanager.report_job_results = report_job_results_mock
+
+        jobs = tmpdir.mkdir("jobs")
+
+        pending_job = jobs.join("1")
+        pending_job.join("status").write("SUBMITTED", mode="w+", ensure=True)
+        pending_job_executable = pending_job.join("executable")
+        pending_job_executable.write(
+            "#!/usr/bin/env sh\necho 'hello'", mode="w+", ensure=True
+        )
+        pending_job_executable.chmod(pending_job_executable.stat().mode | stat.S_IEXEC)
+
+        with mock.patch("os2borgerpc.client.jobmanager.JOBS_DIR", jobs):
+            jobmanager.run_pending_jobs()
+
+        assert pending_job.join("status").read() == "DONE"
+        assert pending_job.join("finished").read() == "2022-01-01 12:00:00.000001"
+        assert pending_job.join("output.log").read() == (
+            f">>> Starting process '{str(pending_job_executable)}' with arguments []"
+            " at 2022-01-01 12:00:00.000001\n"
+            "hello\n"
+            ">>> Succeeded at 2022-01-01 12:00:00.000001\n"
+        )
+
+    @freeze_time(
+        datetime(year=2022, month=1, day=1, hour=12, minute=0, second=0, microsecond=1)
+    )
+    def test_run_pending_jobs_failed(self, tmpdir):
+        now = datetime.now()
+        report_job_results_mock = mock.MagicMock()
+        jobmanager.report_job_results = report_job_results_mock
+
+        jobs = tmpdir.mkdir("jobs")
+
+        pending_job = jobs.join("1")
+        pending_job.join("status").write("SUBMITTED", mode="w+", ensure=True)
+        pending_job_executable = pending_job.join("executable")
+        pending_job_executable.write(
+            "#!/usr/bin/env sh\nexit 1", mode="w+", ensure=True
+        )
+        pending_job_executable.chmod(pending_job_executable.stat().mode | stat.S_IEXEC)
+
+        with mock.patch("os2borgerpc.client.jobmanager.JOBS_DIR", jobs):
+            jobmanager.run_pending_jobs()
+
+        assert pending_job.join("status").read() == "FAILED"
+        assert pending_job.join("finished").read() == "2022-01-01 12:00:00.000001"
+        assert pending_job.join("output.log").read() == (
+            f">>> Starting process '{str(pending_job_executable)}' with arguments []"
+            " at 2022-01-01 12:00:00.000001\n"
+            ">>> Failed with exit status 1 at 2022-01-01 12:00:00.000001\n"
         )
