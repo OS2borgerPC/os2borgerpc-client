@@ -32,7 +32,8 @@ class TestLogRead:
         with patch(
             "os2borgerpc.client.security.log_read.open", mock_open(read_data=data)
         ):
-            logs = log_read.read(5 * 60, "testfilename.txt")
+            five_minutes_ago = 5 * 60
+            logs = log_read.read(five_minutes_ago, "testfilename.txt")
 
         assert logs == returned_data
 
@@ -52,7 +53,8 @@ class TestLogRead:
         with patch(
             "os2borgerpc.client.security.log_read.open", mock_open(read_data=data)
         ):
-            logs = log_read.read(5 * 60, "testfilename.txt")
+            five_minutes_ago = 5 * 60
+            logs = log_read.read(five_minutes_ago, "testfilename.txt")
 
         assert logs == ""
 
@@ -72,6 +74,7 @@ class TestLogRead:
         with patch(
             "os2borgerpc.client.security.log_read.open", mock_open(read_data=data)
         ):
-            logs = log_read.read(5 * 60, "testfilename.txt")
+            five_minutes_ago = 5 * 60
+            logs = log_read.read(five_minutes_ago, "testfilename.txt")
 
         assert logs == ""
