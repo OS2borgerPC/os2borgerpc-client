@@ -522,9 +522,9 @@ def collect_security_events(now):
 
     # Check if any new events occured
     if data != "":
-        with open(os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"), "wt") as (
-            check_file
-        ):
+        with open(
+            os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"), "wt"
+        ) as (check_file):
             check_file.write(data)
 
     csv_file.close()

@@ -156,19 +156,17 @@ class TestJobManager:
         security_event_lines = (
             "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
             " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
-            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: pam_unix(sudo:session):"
-            " session opened for user root by (uid=0)\n"
+            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
+            " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
         )
         # Write some generated security events.
-        security_events = security_dir.join("securityevent.csv").write(
-            security_event_lines
-        )
+        security_dir.join("securityevent.csv").write(security_event_lines)
 
         with mock.patch(
             "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
         ):
             jobmanager.collect_security_events("202201011150")
-            # Assert they are now part of the security check file.
+            # Assert they are now part of the security_check file.
             assert (
                 security_dir.join("security_check_202201011150.csv").read()
                 == security_event_lines
