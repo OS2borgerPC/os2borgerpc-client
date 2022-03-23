@@ -10,7 +10,7 @@ import glob
 import re
 import subprocess
 import pkg_resources
-import lsb_release
+import distro
 import traceback
 
 from pathlib import Path
@@ -50,7 +50,7 @@ files containing the events to be sent to the admin system.
 """
 SECURITY_DIR = "/etc/os2borgerpc/security"
 JOBS_DIR = "/var/lib/os2borgerpc/jobs"
-LOCK_FILE = JOBS_DIR + "/running"
+LOCK_FILE = os.path.join(JOBS_DIR, "running")
 
 
 class LocalJob(dict):
@@ -85,39 +85,39 @@ class LocalJob(dict):
 
     @property
     def path(self):
-        return JOBS_DIR + "/" + str(self.id)
+        return os.path.join(JOBS_DIR, str(self.id))
 
     @property
     def attachments_path(self):
-        return self.path + "/attachments"
+        return os.path.join(self.path, "attachments")
 
     @property
     def executable_path(self):
-        return self.path + "/executable"
+        return os.path.join(self.path, "executable")
 
     @property
     def parameters_path(self):
-        return self.path + "/parameters.json"
+        return os.path.join(self.path, "parameters.json")
 
     @property
     def status_path(self):
-        return self.path + "/status"
+        return os.path.join(self.path, "status")
 
     @property
     def started_path(self):
-        return self.path + "/started"
+        return os.path.join(self.path, "started")
 
     @property
     def finished_path(self):
-        return self.path + "/finished"
+        return os.path.join(self.path, "finished")
 
     @property
     def sent_path(self):
-        return self.path + "/sent"
+        return os.path.join(self.path, "sent")
 
     @property
     def log_path(self):
-        return self.path + "/output.log"
+        return os.path.join(self.path, "output.log")
 
     @property
     def report_data(self):
@@ -463,7 +463,7 @@ def fail_unfinished_jobs():
         ):
             job.mark_finished()
             job.set_status("FAILED")
-            job.logline(">>> Failed due to timeout at %s\n" % (job["finished"]))
+            job.logline(">>> Failed due to timeout at %s" % (job["finished"]))
 
 
 def run_security_scripts():
@@ -579,11 +579,8 @@ def update_and_run():
         os.makedirs(folder, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
     # Get OS info for configuration
-    release = lsb_release.get_distro_information()
-    if "ID" in release:
-        os_name = release["ID"]
-    if "RELEASE" in release:
-        os_release = release["RELEASE"]
+    os_name = distro.name()
+    os_release = distro.version()
     if has_config("job_timeout"):
         try:
             job_timeout = int(config.get_value("job_timeout"))
