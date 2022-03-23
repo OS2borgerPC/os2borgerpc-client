@@ -97,7 +97,6 @@ class TestJobManager:
         datetime(year=2022, month=1, day=1, hour=12, minute=0, second=0, microsecond=1)
     )
     def test_run_pending_jobs_success(self, tmpdir):
-        now = datetime.now()
         report_job_results_mock = mock.MagicMock()
         jobmanager.report_job_results = report_job_results_mock
 
@@ -127,7 +126,6 @@ class TestJobManager:
         datetime(year=2022, month=1, day=1, hour=12, minute=0, second=0, microsecond=1)
     )
     def test_run_pending_jobs_failed(self, tmpdir):
-        now = datetime.now()
         report_job_results_mock = mock.MagicMock()
         jobmanager.report_job_results = report_job_results_mock
 
