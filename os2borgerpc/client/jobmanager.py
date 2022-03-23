@@ -468,14 +468,15 @@ def fail_unfinished_jobs():
 
 def run_security_scripts():
     try:
-        if os.path.getsize(SECURITY_DIR + "/security_log.txt") > 10000:
-            os.remove(SECURITY_DIR + "/security_log.txt")
+        security_log_path = os.path.join(SECURITY_DIR, "security_log.txt")
+        if os.path.getsize(security_log_path) > 10000:
+            os.remove(security_log_path)
 
-        log = open(SECURITY_DIR + "/security_log.txt", "a")
+        log = open(security_log_path, "a")
     except (OSError):
         # File does not exists, so we create it.
-        os.mknod(SECURITY_DIR + "/security_log.txt")
-        log = open(SECURITY_DIR + "/security_log.txt", "a")
+        os.mknod(security_log_path)
+        log = open(security_log_path, "a")
 
     for filename in glob.glob(SECURITY_DIR + "/s_*"):
         print(">>>" + filename, file=log)
@@ -494,11 +495,11 @@ def collect_security_events(now):
     run_security_scripts()
 
     try:
-        check_file = open(SECURITY_DIR + "/lastcheck.txt", "r")
+        check_file = open(os.path.join(SECURITY_DIR, "lastcheck.txt"), "r")
     except OSError:
         # File does not exists, so we create it.
-        os.mknod(SECURITY_DIR + "/lastcheck.txt")
-        check_file = open(SECURITY_DIR + "/lastcheck.txt", "r")
+        os.mknod(os.path.join(SECURITY_DIR, "lastcheck.txt"))
+        check_file = open(os.path.join(SECURITY_DIR, "lastcheck.txt"), "r")
 
     last_security_check = datetime.strptime(now, "%Y%m%d%H%M")
     last_check = check_file.read()
@@ -508,7 +509,7 @@ def collect_security_events(now):
     check_file.close()
 
     try:
-        csv_file = open(SECURITY_DIR + "/securityevent.csv", "r")
+        csv_file = open(os.path.join(SECURITY_DIR, "securityevent.csv"), "r")
     except OSError:
         # File does not exist. No events occured, since last check.
         return False
@@ -521,7 +522,7 @@ def collect_security_events(now):
 
     # Check if any new events occured
     if data != "":
-        with open(SECURITY_DIR + "/security_check_" + now + ".csv", "wt") as (
+        with open(os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"), "wt") as (
             check_file
         ):
             check_file.write(data)
