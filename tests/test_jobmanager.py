@@ -171,3 +171,74 @@ class TestJobManager:
                 security_dir.join("security_check_202201011150.csv").read()
                 == security_event_lines
             )
+
+    @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
+    def test_send_security_events_success(self, tmpdir):
+        # Mock OS2borgerPCAdmin and return a success value on 'push_security_events'.
+        os2borgerpcadmin_mock = mock.MagicMock()
+        jobmanager.OS2borgerPCAdmin = os2borgerpcadmin_mock
+        os2borgerpcadmin_mock.return_value.push_security_events.return_value = 0
+
+        security_dir = tmpdir.mkdir("security")
+
+        security_event_lines = (
+            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
+            " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
+            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
+            " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
+        )
+        # write security event lines to security_check file.
+        security_dir.join("security_check_202201011150.csv").write(security_event_lines)
+
+        with mock.patch(
+            "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
+        ):
+            jobmanager.send_security_events("202201011150")
+
+            security_events = os2borgerpcadmin_mock.return_value.push_security_events
+            # Assert security events are pushed.
+            assert security_events.call_args_list == [
+                mock.call("uid", security_event_lines.splitlines(keepends=True))
+            ]
+            # Assert lastcheck is updated.
+            assert security_dir.join("lastcheck.txt").read() == "202201011150"
+            # Assert security_check and securityevent files are deleted.
+            assert security_dir.join("security_check_202201011150.csv").check() == False
+            assert security_dir.join("securityevent.csv").check() == False
+
+    @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
+    def test_send_security_events_failed(self, tmpdir):
+        # Mock OS2borgerPCAdmin and return a failed value on 'push_security_events'.
+        os2borgerpcadmin_mock = mock.MagicMock()
+        jobmanager.OS2borgerPCAdmin = os2borgerpcadmin_mock
+        os2borgerpcadmin_mock.return_value.push_security_events.return_value = 1
+
+        security_dir = tmpdir.mkdir("security")
+
+        security_event_lines = (
+            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
+            " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
+            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
+            " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
+        )
+        # Write some generated security events.
+        security_dir.join("securityevent.csv").write(security_event_lines)
+        # write security event lines to security_check file.
+        security_dir.join("security_check_202201011150.csv").write(security_event_lines)
+
+        with mock.patch(
+            "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
+        ):
+            jobmanager.send_security_events("202201011150")
+
+            security_events = os2borgerpcadmin_mock.return_value.push_security_events
+            # Assert security events are pushed.
+            assert security_events.call_args_list == [
+                mock.call("uid", security_event_lines.splitlines(keepends=True))
+            ]
+            # Assert lastcheck is not updated.
+            assert security_dir.join("lastcheck.txt").check() == False
+            # Assert securityevent file is kept.
+            assert security_dir.join("securityevent.csv").check() == True
+            # Assert security_check file is deleted
+            assert security_dir.join("security_check_202201011150.csv").check() == False

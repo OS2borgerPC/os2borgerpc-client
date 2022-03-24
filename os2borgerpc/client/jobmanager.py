@@ -541,9 +541,11 @@ def send_security_events(now):
         try:
             result = remote.push_security_events(uid, csv_data)
             if result == 0:
-                with open(SECURITY_DIR + "/lastcheck.txt", "wt") as check_file:
+                with open(
+                    os.path.join(SECURITY_DIR, "lastcheck.txt"), "wt"
+                ) as check_file:
                     check_file.write(now)
-                os.remove(SECURITY_DIR + "/securityevent.csv")
+                os.remove(os.path.join(SECURITY_DIR, "securityevent.csv"))
 
             return result
         except Exception:
@@ -551,9 +553,9 @@ def send_security_events(now):
             traceback.print_exc()
             return False
         finally:
-            os.remove(SECURITY_DIR + "/security_check_" + now + ".csv")
+            os.remove(os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"))
     except OSError:
-        # File does not exist. No events occured, since last check.
+        # File does not exist. No events occurred, since last check.
         return False
 
 
