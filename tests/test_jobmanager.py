@@ -203,8 +203,8 @@ class TestJobManager:
             # Assert lastcheck is updated.
             assert security_dir.join("lastcheck.txt").read() == "202201011150"
             # Assert security_check and securityevent files are deleted.
-            assert security_dir.join("security_check_202201011150.csv").check() == False
-            assert security_dir.join("securityevent.csv").check() == False
+            assert not security_dir.join("security_check_202201011150.csv").check()
+            assert not security_dir.join("securityevent.csv").check()
 
     @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
     def test_send_security_events_failed(self, tmpdir):
@@ -237,8 +237,8 @@ class TestJobManager:
                 mock.call("uid", security_event_lines.splitlines(keepends=True))
             ]
             # Assert lastcheck is not updated.
-            assert security_dir.join("lastcheck.txt").check() == False
+            assert not security_dir.join("lastcheck.txt").check()
             # Assert securityevent file is kept.
-            assert security_dir.join("securityevent.csv").check() == True
+            assert security_dir.join("securityevent.csv").check()
             # Assert security_check file is deleted
-            assert security_dir.join("security_check_202201011150.csv").check() == False
+            assert not security_dir.join("security_check_202201011150.csv").check()
