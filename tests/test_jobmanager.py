@@ -285,7 +285,9 @@ class TestJobManager:
             "security_scripts": [
                 {
                     "name": "test_security_script.sh",
-                    "executable_code": "#!/usr/bin/env\necho 'this is a security script'",
+                    "executable_code": (
+                        "#!/usr/bin/env\necho 'this is a security script'"
+                    ),
                 }
             ],
         }
