@@ -6,7 +6,10 @@ from datetime import (
 from unittest import mock
 from freezegun import freeze_time
 
-from os2borgerpc.client import jobmanager
+from os2borgerpc.client import (
+    jobmanager,
+    config,
+)
 
 
 class TestJobManager:
@@ -130,14 +133,14 @@ class TestJobManager:
         jobmanager.report_job_results = report_job_results_mock
 
         jobs = tmpdir.mkdir("jobs")
-
+        # Create a pending executable job.
         pending_job = jobs.join("1")
         pending_job.join("status").write("SUBMITTED", mode="w+", ensure=True)
         pending_job_executable = pending_job.join("executable")
         pending_job_executable.write(
             "#!/usr/bin/env sh\nexit 1", mode="w+", ensure=True
         )
-        pending_job_executable.chmod(pending_job_executable.stat().mode | stat.S_IEXEC)
+        pending_job_executable.chmod(pending_job_executable.stat().mode | stat.S_IXUSR)
 
         with mock.patch("os2borgerpc.client.jobmanager.JOBS_DIR", jobs):
             jobmanager.run_pending_jobs()
@@ -166,11 +169,12 @@ class TestJobManager:
             "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
         ):
             jobmanager.collect_security_events("202201011150")
-            # Assert they are now part of the security_check file.
-            assert (
-                security_dir.join("security_check_202201011150.csv").read()
-                == security_event_lines
-            )
+
+        # Assert they are now part of the security_check file.
+        assert (
+            security_dir.join("security_check_202201011150.csv").read()
+            == security_event_lines
+        )
 
     @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
     def test_send_security_events_success(self, tmpdir):
@@ -195,16 +199,17 @@ class TestJobManager:
         ):
             jobmanager.send_security_events("202201011150")
 
-            security_events = os2borgerpcadmin_mock.return_value.push_security_events
-            # Assert security events are pushed.
-            assert security_events.call_args_list == [
-                mock.call("uid", security_event_lines.splitlines(keepends=True))
-            ]
-            # Assert lastcheck is updated.
-            assert security_dir.join("lastcheck.txt").read() == "202201011150"
-            # Assert security_check and securityevent files are deleted.
-            assert not security_dir.join("security_check_202201011150.csv").check()
-            assert not security_dir.join("securityevent.csv").check()
+        # Assert security events are pushed.
+        security_events = os2borgerpcadmin_mock.return_value.push_security_events
+
+        assert security_events.call_args_list == [
+            mock.call("uid", security_event_lines.splitlines(keepends=True))
+        ]
+        # Assert lastcheck is updated.
+        assert security_dir.join("lastcheck.txt").read() == "202201011150"
+        # Assert security_check and securityevent files are deleted.
+        assert not security_dir.join("security_check_202201011150.csv").check()
+        assert not security_dir.join("securityevent.csv").check()
 
     @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
     def test_send_security_events_failed(self, tmpdir):
@@ -231,14 +236,76 @@ class TestJobManager:
         ):
             jobmanager.send_security_events("202201011150")
 
-            security_events = os2borgerpcadmin_mock.return_value.push_security_events
-            # Assert security events are pushed.
-            assert security_events.call_args_list == [
-                mock.call("uid", security_event_lines.splitlines(keepends=True))
-            ]
-            # Assert lastcheck is not updated.
-            assert not security_dir.join("lastcheck.txt").check()
-            # Assert securityevent file is kept.
-            assert security_dir.join("securityevent.csv").check()
-            # Assert security_check file is deleted
-            assert not security_dir.join("security_check_202201011150.csv").check()
+        # Assert security events are pushed.
+        security_events = os2borgerpcadmin_mock.return_value.push_security_events
+
+        assert security_events.call_args_list == [
+            mock.call("uid", security_event_lines.splitlines(keepends=True))
+        ]
+        # Assert lastcheck is not updated.
+        assert not security_dir.join("lastcheck.txt").check()
+        # Assert securityevent file is kept.
+        assert security_dir.join("securityevent.csv").check()
+        # Assert security_check file is deleted
+        assert not security_dir.join("security_check_202201011150.csv").check()
+
+    @freeze_time("2022-01-01 12:00:00")
+    @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
+    def test_get_instructions(self, tmpdir):
+        # Mock OS2borgerPCAdmin and return instructions on 'get_instructions'.
+        jobs = tmpdir.mkdir("jobs")
+        os2borgerpc_dir = tmpdir.mkdir("os2borgerpc")
+        security_dir = tmpdir.mkdir("security")
+
+        os2borgerpcadmin_mock = mock.MagicMock()
+        jobmanager.OS2borgerPCAdmin = os2borgerpcadmin_mock
+        os2borgerpc_conf = os2borgerpc_dir.join("os2borgerpc.conf").ensure()
+
+        os2borgerpcconfig_mock = mock.MagicMock()
+        jobmanager.OS2borgerPCConfig = os2borgerpcconfig_mock
+        os2borgerpcconfig_mock.return_value = config.OS2borgerPCConfig(
+            [str(os2borgerpc_conf)]
+        )
+        instructions = {
+            "configuration": {
+                "admin_url": "test.com",
+                "distribution": "os2borgerpc20.04",
+                "hostname": "shg-pc",
+                "site": "magenta",
+                "uid": "uid",
+            },
+            "jobs": [
+                {
+                    "id": 1,
+                    "status": "SUBMITTED",
+                    "parameters": [{"type": "string", "value": "hello parameter"}],
+                    "executable_code": "#!/usr/bin/env\necho $1",
+                },
+            ],
+            "security_scripts": [
+                {
+                    "name": "test_security_script.sh",
+                    "executable_code": "#!/usr/bin/env\necho 'this is a security script'",
+                }
+            ],
+        }
+        os2borgerpcadmin_mock.return_value.get_instructions.return_value = instructions
+
+        with mock.patch("os2borgerpc.client.jobmanager.JOBS_DIR", jobs):
+            with mock.patch(
+                "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
+            ):
+                jobmanager.get_instructions()
+
+        job = jobs.join("1")
+        security_script = security_dir.join("s_test_security_script.sh")
+        # Assert job and security script are created properly and are executable.
+        assert job.check()
+        assert job.join("status").read() == "SUBMITTED"
+        assert job.join("executable").read() == "#!/usr/bin/env\necho $1"
+        assert job.join("executable").stat().mode & stat.S_IXUSR
+        assert job.join("output.log").read() == "Job imported at 2022-01-01 12:00:00\n"
+        assert (
+            security_script.read() == "#!/usr/bin/env\necho 'this is a security script'"
+        )
+        assert security_script.stat().mode & stat.S_IXUSR
