@@ -67,19 +67,23 @@ while true; do
     #   Prompt user for new host name
     echo "Indtast venligst et nyt navn for denne computer:" \
          "Navnet skal have en længde ml. 1-63 tegn," \
-         "og gyldige tegn er a-z, 0-9 og bindestreg (-)."
+         "og gyldige tegn er a-z, A-Z, 0-9 og bindestreg (-)."
     # https://www.man7.org/linux/man-pages/man7/hostname.7.html
-    read -r NEWHOSTNAME
-    while [[ ! "$NEWHOSTNAME" =~ ^[0-9a-z][0-9a-z-]{1,63}$ ]]; do
+    read -r NEW_COMPUTER_NAME
+    while [[ ! "$NEW_COMPUTER_NAME" =~ ^[0-9a-zA-Z][0-9a-zA-Z-]{1,63}$ ]]; do
         echo "Ugyldigt computernavn.  Prøv igen."
-        read -r NEWHOSTNAME
+        read -r NEW_COMPUTER_NAME
     done
-    echo "$NEWHOSTNAME" > /etc/hostname
-    set_os2borgerpc_config hostname "$NEWHOSTNAME"
-    hostname "$NEWHOSTNAME"
 
+    # Idea: Allow uppercase in the computername due to popular demand,
+    # but lowercase it so it's a valid hostname which is case insensitive
+    NEW_HOSTNAME=$(echo "$NEW_COMPUTER_NAME" | tr '[:upper:]' '[:lower:]')
+
+    echo "$NEW_HOSTNAME" > /etc/hostname
+    set_os2borgerpc_config hostname "$NEW_HOSTNAME"
+    hostname "$NEW_HOSTNAME"
     sed --in-place /127.0.1.1/d /etc/hosts
-    sed --in-place "2i 127.0.1.1	$NEWHOSTNAME" /etc/hosts
+    sed --in-place "2i 127.0.1.1	$NEW_HOSTNAME" /etc/hosts
 
 
     # - site
@@ -173,7 +177,7 @@ while true; do
 
     # OK, we got the config.
     # Do the deed.
-    if ! os2borgerpc_register_in_admin; then
+    if ! os2borgerpc_register_in_admin "$NEW_COMPUTER_NAME"; then
         fatal "Tilmelding mislykkedes" && continue || exit 1
     fi
 
