@@ -1,3 +1,13 @@
+==================
+os2borgerpc-client
+==================
+
+|pipeline status|
+|coverage report|
+
+.. |pipeline status| image:: https://git.magenta.dk/os2borgerpc/os2borgerpc-client/badges/development/pipeline.svg
+.. |coverage report| image:: https://git.magenta.dk/os2borgerpc/os2borgerpc-client/badges/development/coverage.svg
+
 This repository contains os2borgerpc-client, a Python library which functions as a
 client for the OS2borgerPC Admin system.
 
