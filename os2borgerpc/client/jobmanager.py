@@ -49,6 +49,10 @@ Directory structure for OS2borgerPC security events (for historical reasons):
 files containing the events to be sent to the admin system.
 """
 SECURITY_DIR = "/etc/os2borgerpc/security"
+LAST_SECURITY_EVENTS_CHECKED_TIME = os.path.join(SECURITY_DIR, "lastcheck.txt")
+SECURITY_EVENT_FILE = os.path.join(SECURITY_DIR, "securityevent.csv")
+SECURITY_SCRIPTS_LOG_FILE = os.path.join(SECURITY_DIR, "security_log.txt")
+
 JOBS_DIR = "/var/lib/os2borgerpc/jobs"
 LOCK_FILE = os.path.join(JOBS_DIR, "running")
 
@@ -77,7 +81,7 @@ class LocalJob(dict):
                 self.id = m.group(1)
 
         if not os.path.isdir(self.path):
-            os.mkdir(self.path)
+            os.makedirs(self.path, mode=0o700, exist_ok=True)
 
         # Initialize with given data
         if data is not None:
@@ -467,104 +471,101 @@ def fail_unfinished_jobs():
 
 
 def run_security_scripts():
-    try:
-        security_log_path = os.path.join(SECURITY_DIR, "security_log.txt")
-        if os.path.getsize(security_log_path) > 10000:
-            os.remove(security_log_path)
+    """
+    Run the received security scripts and log them
+    to SECURITY_SCRIPTS_LOG_FILE.
+    Security scripts write to SECURITY_EVENT_FILE themselves.
+    """
+    if not os.path.exists(SECURITY_SCRIPTS_LOG_FILE):
+        os.mknod(SECURITY_SCRIPTS_LOG_FILE)
+    if os.path.getsize(SECURITY_SCRIPTS_LOG_FILE) > 10000:
+        os.remove(SECURITY_SCRIPTS_LOG_FILE)
 
-        log = open(security_log_path, "a")
-    except (OSError):
-        # File does not exists, so we create it.
-        os.mknod(security_log_path)
-        log = open(security_log_path, "a")
-
-    for filename in glob.glob(SECURITY_DIR + "/s_*"):
-        print(">>>" + filename, file=log)
-        cmd = [filename]
-        ret_val = subprocess.call(cmd, shell=True, stdout=log, stderr=log)
-        if ret_val == 0:
-            print(">>>" + filename + " Succeeded", file=log)
-        else:
-            print(">>>" + filename + " Failed", file=log)
-
-    log.close()
+    with open(SECURITY_SCRIPTS_LOG_FILE, "a") as log:
+        for filename in glob.glob(SECURITY_DIR + "/s_*"):
+            print(">>>" + filename, file=log)
+            cmd = [filename]
+            ret_val = subprocess.call(cmd, shell=True, stdout=log, stderr=log)
+            if ret_val == 0:
+                print(">>>" + filename + " Succeeded", file=log)
+            else:
+                print(">>>" + filename + " Failed", file=log)
 
 
 def collect_security_events(now):
-    # execute scripts
-    run_security_scripts()
+    """
+    Filters security events from SECURITY_EVENT_FILE newer than last_check.
+    """
+    last_check = read_last_security_events_checked_time()
+    if not last_check:
+        last_check = datetime.strptime(now, "%Y%m%d%H%M")
 
-    try:
-        check_file = open(os.path.join(SECURITY_DIR, "lastcheck.txt"), "r")
-    except OSError:
-        # File does not exists, so we create it.
-        os.mknod(os.path.join(SECURITY_DIR, "lastcheck.txt"))
-        check_file = open(os.path.join(SECURITY_DIR, "lastcheck.txt"), "r")
+    # File does not exist. No events occured, since last check.
+    if not os.path.exists(SECURITY_EVENT_FILE):
+        return ""
+    with open(SECURITY_EVENT_FILE, "r") as csv_file:
+        csv_file_lines = csv_file.readlines()
 
-    last_security_check = datetime.strptime(now, "%Y%m%d%H%M")
-    last_check = check_file.read()
-    if last_check:
-        last_security_check = datetime.strptime(last_check, "%Y%m%d%H%M")
-
-    check_file.close()
-
-    try:
-        csv_file = open(os.path.join(SECURITY_DIR, "securityevent.csv"), "r")
-    except OSError:
-        # File does not exist. No events occured, since last check.
-        return False
-
-    data = ""
-    for line in csv_file:
+    new_security_events = []
+    for line in csv_file_lines:
         csv_split = line.split(",")
-        if datetime.strptime(csv_split[0], "%Y%m%d%H%M") >= last_security_check:
-            data += line
+        if datetime.strptime(csv_split[0], "%Y%m%d%H%M") >= last_check:
+            new_security_events.append(line)
 
-    # Check if any new events occured
-    if data != "":
-        with open(
-            os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"), "wt"
-        ) as (check_file):
-            check_file.write(data)
-
-    csv_file.close()
+    return new_security_events
 
 
-def send_security_events(now):
+def send_security_events(security_events):
+    """
+    Send security events to the server and return True/False for success/error.
+    """
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
-
     try:
-        with open(SECURITY_DIR + "/security_check_" + now + ".csv", "r") as fh:
-            csv_data = [line for line in fh]
-
-        try:
-            result = remote.push_security_events(uid, csv_data)
-            if result == 0:
-                with open(
-                    os.path.join(SECURITY_DIR, "lastcheck.txt"), "wt"
-                ) as check_file:
-                    check_file.write(now)
-                os.remove(os.path.join(SECURITY_DIR, "securityevent.csv"))
-
-            return result
-        except Exception:
-            print("Error while sending security events", file=sys.stderr)
-            traceback.print_exc()
-            return False
-        finally:
-            os.remove(os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"))
-    except OSError:
-        # File does not exist. No events occurred, since last check.
+        result = remote.push_security_events(uid, security_events)
+        return result == 0
+    except Exception:
+        print("Error while sending security events", file=sys.stderr)
+        traceback.print_exc()
         return False
 
 
-def handle_security_events():
-    # if security dir exists
-    if os.path.isdir(SECURITY_DIR):
-        now = datetime.now().strftime("%Y%m%d%H%M")
-        collect_security_events(now)
-        send_security_events(now)
+def update_last_security_events_checked_time(datetime_obj):
+    """Update LAST_SECURITY_EVENTS_CHECKED_TIME from a datetime object."""
+    with open(LAST_SECURITY_EVENTS_CHECKED_TIME, "wt") as f:
+        f.write(datetime_obj)
+
+
+def read_last_security_events_checked_time():
+    """
+    Read LAST_SECURITY_EVENTS_CHECKED_TIME to a datetime object
+    or an empty string.
+    """
+    if os.path.exists(LAST_SECURITY_EVENTS_CHECKED_TIME):
+        with open(LAST_SECURITY_EVENTS_CHECKED_TIME, "r") as f:
+            content = f.read()
+        datetime_obj = datetime.strptime(content, "%Y%m%d%H%M")
+        return datetime_obj
+    return ""
+
+
+def check_security_events():
+    """
+    Entrypoint for security events checking.
+    """
+    now = datetime.now()
+    if not os.path.isdir(SECURITY_DIR):
+        raise FileNotFoundError
+
+    run_security_scripts()
+    new_security_events = collect_security_events(now)
+    if new_security_events:
+        result = send_security_events(new_security_events)
+        if result:
+            os.remove(SECURITY_EVENT_FILE)
+            update_last_security_events_checked_time(now)
+    else:
+        update_last_security_events_checked_time(now)
 
 
 def send_config_value(key, value):
@@ -604,7 +605,7 @@ def update_and_run():
                 fail_unfinished_jobs()
                 send_unsent_jobs()
                 run_pending_jobs()
-                handle_security_events()
+                check_security_events()
             except (OSError, socket.error):
                 print("Network error, exiting ...")
                 traceback.print_exc()
