@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
+"""log_read module."""
 
-# Search syslog from the end to a certain time
-# Syslog is by Ubuntu default rotated daily
+from datetime import datetime, timedelta
 
 
 def read(sec, fname):
+    """Search a log from within the last "sec" seconds to now."""
     data = ""
     now = datetime.now()
 

@@ -1,3 +1,5 @@
+"""Module for jobmanager."""
+
 import os
 import sys
 import socket
@@ -27,25 +29,28 @@ OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
 ).version
 DEFAULT_JOB_TIMEOUT = 900
 
-"""
-Directory structure for storing OS2borgerPC jobs:
-/var/lib/os2borgerpc/jobs/<id> - Files related to job with id <id>
-/var/lib/os2borgerpc/jobs/<id>/attachments - files needed to execute the job
-/var/lib/os2borgerpc/jobs/<id>/executable - the program that executes the job
-/var/lib/os2borgerpc/jobs/<id>/parameters.json - json file with parameters
-/var/lib/os2borgerpc/jobs/<id>/status - status file, created by runtime system
-/var/lib/os2borgerpc/jobs/<id>/started - created when job is started
-/var/lib/os2borgerpc/jobs/<id>/finished - created when job is finished/failed
-/var/lib/os2borgerpc/jobs/<id>/sent - created when job is sent back to server
-/var/lib/os2borgerpc/jobs/<id>/output.log - Logfile with output from the job
-"""
-
 JOBS_DIR = "/var/lib/os2borgerpc/jobs"
 LOCK_FILE = os.path.join(JOBS_DIR, "running")
 
 
 class LocalJob(dict):
+    """
+    Job Model representing a job received from the server.
+
+    Directory structure for storing OS2borgerPC jobs:
+    /var/lib/os2borgerpc/jobs/<id> - Files related to job with id <id>
+    /var/lib/os2borgerpc/jobs/<id>/attachments - files needed to execute the job
+    /var/lib/os2borgerpc/jobs/<id>/executable - the program that executes the job
+    /var/lib/os2borgerpc/jobs/<id>/parameters.json - json file with parameters
+    /var/lib/os2borgerpc/jobs/<id>/status - status file, created by runtime system
+    /var/lib/os2borgerpc/jobs/<id>/started - created when job is started
+    /var/lib/os2borgerpc/jobs/<id>/finished - created when job is finished/failed
+    /var/lib/os2borgerpc/jobs/<id>/sent - created when job is sent back to server
+    /var/lib/os2borgerpc/jobs/<id>/output.log - Logfile with output from the job
+    """
+
     def __init__(self, id=None, path=None, data=None):
+        """Primarily populates instance with data."""
         if id is None and data is not None and "id" in data:
             id = data["id"]
             del data["id"]
@@ -76,42 +81,52 @@ class LocalJob(dict):
 
     @property
     def path(self):
+        """Return the job root path."""
         return os.path.join(JOBS_DIR, str(self.id))
 
     @property
     def attachments_path(self):
+        """Return the attachments path."""
         return os.path.join(self.path, "attachments")
 
     @property
     def executable_path(self):
+        """Return the executable path."""
         return os.path.join(self.path, "executable")
 
     @property
     def parameters_path(self):
+        """Return the parameters path."""
         return os.path.join(self.path, "parameters.json")
 
     @property
     def status_path(self):
+        """Return the status path."""
         return os.path.join(self.path, "status")
 
     @property
     def started_path(self):
+        """Return the started path."""
         return os.path.join(self.path, "started")
 
     @property
     def finished_path(self):
+        """Return the finished path."""
         return os.path.join(self.path, "finished")
 
     @property
     def sent_path(self):
+        """Return the sent path."""
         return os.path.join(self.path, "sent")
 
     @property
     def log_path(self):
+        """Return the output log path."""
         return os.path.join(self.path, "output.log")
 
     @property
     def report_data(self):
+        """Return the report data for the admin site."""
         self.load_from_path()
         result = {"id": self.id}
         for k in ["status", "started", "finished", "log_output"]:
@@ -119,22 +134,27 @@ class LocalJob(dict):
         return result
 
     def set_status(self, value):
+        """Set job status."""
         self["status"] = value
         self.save_property_to_file("status", self.status_path)
 
     def mark_started(self):
+        """Set started time."""
         self["started"] = str(datetime.now())
         self.save_property_to_file("started", self.started_path)
 
     def mark_finished(self):
+        """Set finished time."""
         self["finished"] = str(datetime.now())
         self.save_property_to_file("finished", self.finished_path)
 
     def mark_sent(self):
+        """Set sent time."""
         self["sent"] = str(datetime.now())
         self.save_property_to_file("sent", self.sent_path)
 
     def load_local_parameters(self):
+        """Load local job parameters."""
         self.read_property_from_file("json_params", self.parameters_path)
         if "json_params" in self:
             self["local_parameters"] = json.loads(self["json_params"])
@@ -143,6 +163,7 @@ class LocalJob(dict):
             self["local_parameters"] = []
 
     def load_from_path(self, full_info=False):
+        """Load properties from a path."""
         if not os.path.isdir(self.path):
             raise ValueError("%s is not a directory" % self.path)
 
@@ -157,6 +178,7 @@ class LocalJob(dict):
             self.load_local_parameters()
 
     def read_property_from_file(self, prop, file_path):
+        """Read property from file."""
         try:
             with open(file_path, "rt") as fh:
                 self[prop] = fh.read()
@@ -164,15 +186,18 @@ class LocalJob(dict):
             pass
 
     def save_property_to_file(self, prop, file_path):
+        """Save property to file."""
         if prop in self:
             with open(file_path, "wt") as fh:
                 fh.write(self[prop])
 
     def populate(self, data):
+        """Populate instance with data."""
         for k in data.keys():
             self[k] = data[k]
 
     def save(self):
+        """Save the instance."""
         self.save_property_to_file("executable_code", self.executable_path)
         self.save_property_to_file("status", self.status_path)
         self.save_property_to_file("started", self.started_path)
@@ -189,6 +214,7 @@ class LocalJob(dict):
                 param_fh.write(json.dumps(self["local_parameters"]))
 
     def translate_parameters(self):
+        """Translate job parameters from an url to a file or string value."""
         if "parameters" not in self:
             return
 
@@ -223,13 +249,16 @@ class LocalJob(dict):
                 local_params.append(param["value"])
 
     def log(self, message):
+        """Write message to log file."""
         with open(self.log_path, "at") as fh:
             fh.write(message)
 
     def logline(self, message):
+        """Write a single line to log file."""
         self.log(message + "\n")
 
     def run(self):
+        """Run the job."""
         self.read_property_from_file("status", self.status_path)
         if self["status"] != "SUBMITTED":
             os.sys.stderr.write(
@@ -269,6 +298,7 @@ class LocalJob(dict):
 
 
 def get_job_timeout():
+    """Return the set job timeout, may be the default."""
     config = OS2borgerPCConfig()
 
     if has_config("job_timeout"):
@@ -283,6 +313,7 @@ def get_job_timeout():
 
 
 def get_instructions():
+    """Get instructions from the admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
@@ -298,7 +329,7 @@ def get_instructions():
 
 
 def import_jobs(instructions):
-    # Import jobs
+    """Import jobs from instructions and save them."""
     for j in instructions["jobs"]:
         local_job = LocalJob(data=j)
         local_job.save()
@@ -306,7 +337,7 @@ def import_jobs(instructions):
 
 
 def update_configuration_from_server(instructions):
-    # Update configuration
+    """Update (local) configuration from admin site server."""
     config = OS2borgerPCConfig()
     local_config = {}
     for key, value in config.get_data().items():
@@ -327,8 +358,11 @@ def update_configuration_from_server(instructions):
 
 
 def check_outstanding_packages():
-    # Get number of packages with updates and number of security updates.
-    # This is really a wrapper for apt-check.
+    """
+    Get number of packages with updates and number of security updates.
+
+    This is really a wrapper for apt-check.
+    """
     try:
         proc = subprocess.Popen(
             ["/usr/lib/update-notifier/apt-check"],
@@ -346,6 +380,7 @@ def check_outstanding_packages():
 
 
 def report_job_results(joblist):
+    """Report job results back to the admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
     remote.send_status_info(
@@ -354,6 +389,7 @@ def report_job_results(joblist):
 
 
 def flat_map(iterable, function):
+    """Flatten an iterable."""
     for i in iterable:
         v = function(i)
         if v:
@@ -361,6 +397,7 @@ def flat_map(iterable, function):
 
 
 def get_job_dirs(status_list):
+    """Return the directories of jobs with a status in status_list."""
     result = []
     # Return job directories sorted by job ID, to make sure they get executed
     # in a predictable order
@@ -386,6 +423,7 @@ def get_job_dirs(status_list):
 
 
 def run_pending_jobs():
+    """Run the submitted jobs."""
     dirs = get_job_dirs(status_list=["SUBMITTED"])
     results = []
 
@@ -398,6 +436,7 @@ def run_pending_jobs():
 
 
 def send_unsent_jobs():
+    """Send unsent done or failed jobs."""
     dirs = get_job_dirs(status_list=["DONE", "FAILED"])
     jobs = []
 
@@ -414,6 +453,7 @@ def send_unsent_jobs():
 
 
 def fail_unfinished_jobs():
+    """Fail jobs that are stuck in running state."""
     dirs = get_job_dirs(status_list=["RUNNING"])
     now = datetime.now()
 
@@ -433,6 +473,7 @@ def fail_unfinished_jobs():
 
 
 def send_config_value(key, value):
+    """Send config value to admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
@@ -440,7 +481,7 @@ def send_config_value(key, value):
 
 
 def update_and_run():
-    """Main function for the jobmanager."""
+    """Run the main function for the jobmanager."""
     os.makedirs(JOBS_DIR, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
     # Get OS info for configuration
@@ -470,8 +511,8 @@ def update_and_run():
                 fail_unfinished_jobs()
                 send_unsent_jobs()
                 run_pending_jobs()
-                if "security_scripts" in instructions:
-                    check_security_events(instructions["security_scripts"])
+                security_scripts = instructions.get("security_scripts", [])
+                check_security_events(security_scripts)
             except (OSError, socket.error):
                 print("Network error, exiting ...")
                 traceback.print_exc()

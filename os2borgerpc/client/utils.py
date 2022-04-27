@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""This file contains utilities for communicating with the OS2borgerPC admin
-system."""
+"""This file contains utilities for communicating with the OS2borgerPC admin site."""
 
 import os
 import sys
@@ -16,9 +15,13 @@ from .config import OS2borgerPCConfig
 
 @contextlib.contextmanager
 def filelock(file_name, max_age=None):
-    """Acquires the named lock for the lifetime of the context. If the named
+    """
+    File lock context manager.
+
+    Acquires the named lock for the lifetime of the context. If the named
     lock was acquired with this function by another process more than max_age
-    seconds ago, then that process will be forcibly terminated."""
+    seconds ago, then that process will be forcibly terminated.
+    """
     pid_file = file_name + ".pid"
     with open(file_name, "w") as fd:
         try:
@@ -63,6 +66,7 @@ def filelock(file_name, max_age=None):
 
 
 def get_url_and_uid():
+    """Get the Admin site RPC URL and BorgerPC UID as tuple."""
     config = OS2borgerPCConfig()
     uid = config.get_value("uid")
     config_data = config.get_data()

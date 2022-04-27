@@ -1,10 +1,10 @@
-from datetime import datetime
+"""csv_writer module."""
 
-# Dont give timestamp as argument
-# csv format: TimeStamp, securityEventCode, Tec sum, Raw data
+from datetime import datetime
 
 
 def write_data(data):
+    """Write security event line to security events file."""
     if not data:
         return
 

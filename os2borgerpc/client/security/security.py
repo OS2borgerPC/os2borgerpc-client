@@ -1,3 +1,4 @@
+"""Security module."""
 from datetime import datetime
 from pathlib import Path
 import os
@@ -10,17 +11,14 @@ import traceback
 from os2borgerpc.client.admin_client import OS2borgerPCAdmin
 from os2borgerpc.client.utils import get_url_and_uid
 
-"""
-Directory structure for OS2borgerPC security events
-/etc/os2borgerpc/security/securityevent.csv - Security event log file.
-/etc/os2borgerpc/security/ - Scripts to be executed by the jobmanager.
-/etc/os2borgerpc/security/security_check_YYYYMMDDHHmm.csv -
-files containing the events to be sent to the admin system.
-"""
-
+# Main folder for the security module.
 SECURITY_DIR = Path("/etc/os2borgerpc/security")
+# Time continuously updated with the last security events run.
+# Start time for collecting security events.
 LAST_SECURITY_EVENTS_CHECKED_TIME = SECURITY_DIR / "lastcheck.txt"
+# CSV-formatted data with a line for each security event.
 SECURITY_EVENT_FILE = SECURITY_DIR / "securityevent.csv"
+# Log file for the output of the security scripts.
 SECURITY_SCRIPTS_LOG_FILE = SECURITY_DIR / "security_log.txt"
 
 
@@ -44,9 +42,10 @@ def import_new_security_scripts(security_scripts):
 
 def run_security_scripts():
     """
-    Run the received security scripts and log them
-    to SECURITY_SCRIPTS_LOG_FILE.
-    Security scripts write to SECURITY_EVENT_FILE themselves.
+    Run the received security scripts.
+
+    Run the security scripts and log them to SECURITY_SCRIPTS_LOG_FILE.
+    The security scripts write to SECURITY_EVENT_FILE themselves.
     """
     if not os.path.exists(SECURITY_SCRIPTS_LOG_FILE):
         os.mknod(SECURITY_SCRIPTS_LOG_FILE)
@@ -65,9 +64,7 @@ def run_security_scripts():
 
 
 def collect_security_events(now):
-    """
-    Filters security events from SECURITY_EVENT_FILE newer than last_check.
-    """
+    """Collect the security events from SECURITY_EVENT_FILE newer than last_check."""
     last_check = read_last_security_events_checked_time()
     if not last_check:
         last_check = datetime.strptime(now, "%Y%m%d%H%M")
@@ -89,7 +86,9 @@ def collect_security_events(now):
 
 def send_security_events(security_events):
     """
-    Send security events to the server and return True/False for success/error.
+    Send security events to the server.
+
+    Return True/False for success/error.
     """
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
@@ -110,6 +109,8 @@ def update_last_security_events_checked_time(datetime_obj):
 
 def read_last_security_events_checked_time():
     """
+    Read LAST_SECURITY_EVENTS_CHECKED_TIME.
+
     Read LAST_SECURITY_EVENTS_CHECKED_TIME to a datetime object
     or an empty string.
     """
@@ -122,18 +123,24 @@ def read_last_security_events_checked_time():
 
 
 def check_security_events(security_scripts):
-    """
-    Entrypoint for security events checking.
-    """
+    """Entrypoint for security events checking."""
     os.makedirs(SECURITY_DIR, mode=0o700, exist_ok=True)
 
     now = datetime.now()
+
+    # If no security scripts exist simply update the last checked time
+    # So the security event collection only includes new security events.
+    if not security_scripts:
+        update_last_security_events_checked_time(now)
+        return
 
     cleanup_security_scripts(security_scripts)
     import_new_security_scripts(security_scripts)
     run_security_scripts()
     new_security_events = collect_security_events(now)
 
+    # Only update last checked time in case sending security events is successful
+    # or none is found.
     if new_security_events:
         result = send_security_events(new_security_events)
         if result:
