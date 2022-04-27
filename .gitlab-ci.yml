@@ -38,7 +38,7 @@ Lint python scripts:
     - flake8  --ignore=E203,W503 .
     - black --check --diff .
     - grep -rl python3 bin/| xargs flake8
-    - pydocstyle os2borgerpc-client
+    - pydocstyle os2borgerpc
 
 .test-default: &test-default
   stage: test
