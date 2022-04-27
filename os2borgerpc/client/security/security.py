@@ -1,14 +1,14 @@
 from datetime import datetime
-from os2borgerpc.client.admin_client import OS2borgerPCAdmin
-from os2borgerpc.client.utils import get_url_and_uid
 from pathlib import Path
-import glob
 import os
 import os.path
 import stat
 import subprocess
 import sys
 import traceback
+
+from os2borgerpc.client.admin_client import OS2borgerPCAdmin
+from os2borgerpc.client.utils import get_url_and_uid
 
 """
 Directory structure for OS2borgerPC security events
@@ -18,27 +18,28 @@ Directory structure for OS2borgerPC security events
 files containing the events to be sent to the admin system.
 """
 
-SECURITY_DIR = "/etc/os2borgerpc/security"
-LAST_SECURITY_EVENTS_CHECKED_TIME = os.path.join(SECURITY_DIR, "lastcheck.txt")
-SECURITY_EVENT_FILE = os.path.join(SECURITY_DIR, "securityevent.csv")
-SECURITY_SCRIPTS_LOG_FILE = os.path.join(SECURITY_DIR, "security_log.txt")
+SECURITY_DIR = Path("/etc/os2borgerpc/security")
+LAST_SECURITY_EVENTS_CHECKED_TIME = SECURITY_DIR / "lastcheck.txt"
+SECURITY_EVENT_FILE = SECURITY_DIR / "securityevent.csv"
+SECURITY_SCRIPTS_LOG_FILE = SECURITY_DIR / "security_log.txt"
 
 
-def cleanup_old_import_new_security_scripts(security_scripts):
-    security_dir = Path(SECURITY_DIR)
-    # if security dir exists
-    if security_dir.is_dir():
-        # Always remove the old security scripts -- perhaps this PC has been
+def cleanup_security_scripts(security_scripts):
+    """Cleanup existing security scripts."""
+    if SECURITY_DIR.is_dir():
+        # Always remove the security scripts -- perhaps this PC has been
         # moved to another group and no longer needs them
-        for old_script in security_dir.glob("s_*"):
-            old_script.unlink()
+        for script in SECURITY_DIR.glob("s_*"):
+            script.unlink()
 
-        # Import the fresh security scripts
-        for s in security_scripts:
-            script = security_dir.joinpath("s_" + s["name"].replace(" ", ""))
-            with script.open("wt") as fh:
-                fh.write(s["executable_code"])
-            script.chmod(stat.S_IRWXU)
+
+def import_new_security_scripts(security_scripts):
+    """Import the new security scripts received from the server."""
+    for s in security_scripts:
+        script = SECURITY_DIR.joinpath("s_" + s["name"].replace(" ", ""))
+        with script.open("wt") as fh:
+            fh.write(s["executable_code"])
+        script.chmod(stat.S_IRWXU)
 
 
 def run_security_scripts():
@@ -53,14 +54,14 @@ def run_security_scripts():
         os.remove(SECURITY_SCRIPTS_LOG_FILE)
 
     with open(SECURITY_SCRIPTS_LOG_FILE, "a") as log:
-        for filename in glob.glob(SECURITY_DIR + "/s_*"):
-            print(">>>" + filename, file=log)
-            cmd = [filename]
+        for script in SECURITY_DIR.glob("s_*"):
+            print(">>>" + script, file=log)
+            cmd = [script]
             ret_val = subprocess.call(cmd, shell=True, stdout=log, stderr=log)
             if ret_val == 0:
-                print(">>>" + filename + " Succeeded", file=log)
+                print(">>>" + script + " Succeeded", file=log)
             else:
-                print(">>>" + filename + " Failed", file=log)
+                print(">>>" + script + " Failed", file=log)
 
 
 def collect_security_events(now):
@@ -124,18 +125,15 @@ def check_security_events(security_scripts):
     """
     Entrypoint for security events checking.
     """
-    for folder in (
-        SECURITY_DIR,
-    ):
-        os.makedirs(folder, mode=0o700, exist_ok=True)
+    os.makedirs(SECURITY_DIR, mode=0o700, exist_ok=True)
 
     now = datetime.now()
-    if not os.path.isdir(SECURITY_DIR):
-        raise FileNotFoundError
 
-    cleanup_old_import_new_security_scripts(security_scripts)
+    cleanup_security_scripts(security_scripts)
+    import_new_security_scripts(security_scripts)
     run_security_scripts()
     new_security_events = collect_security_events(now)
+
     if new_security_events:
         result = send_security_events(new_security_events)
         if result:

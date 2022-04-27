@@ -18,7 +18,7 @@ from .config import OS2borgerPCConfig, has_config
 
 from .admin_client import OS2borgerPCAdmin
 from .utils import filelock, get_url_and_uid
-from security.security import check_security_events
+from .security.security import check_security_events
 
 
 # Keep this in sync with package name in setup.py
@@ -294,33 +294,36 @@ def get_instructions():
         # No instructions likely = no network. Do not continue.
         raise
 
-    if "configuration" in instructions:
-        # Update configuration
-        config = OS2borgerPCConfig()
-        local_config = {}
-        for key, value in config.get_data().items():
-            # We only care about string values
-            if isinstance(value, str):
-                local_config[key] = value
-
-        for key, value in instructions["configuration"].items():
-            config.set_value(key, value)
-            if key in local_config:
-                del local_config[key]
-
-        # Anything left in local_config needs to be removed
-        for key in local_config.keys():
-            config.remove_key(key)
-
-        config.save()
-
-    # Import jobs
-    if "jobs" in instructions:
-        for j in instructions["jobs"]:
-            local_job = LocalJob(data=j)
-            local_job.save()
-            local_job.logline("Job imported at %s" % datetime.now())
     return instructions
+
+
+def import_jobs(instructions):
+    # Import jobs
+    for j in instructions["jobs"]:
+        local_job = LocalJob(data=j)
+        local_job.save()
+        local_job.logline("Job imported at %s" % datetime.now())
+
+
+def update_configuration_from_server(instructions):
+    # Update configuration
+    config = OS2borgerPCConfig()
+    local_config = {}
+    for key, value in config.get_data().items():
+        # We only care about string values
+        if isinstance(value, str):
+            local_config[key] = value
+
+    for key, value in instructions["configuration"].items():
+        config.set_value(key, value)
+        if key in local_config:
+            del local_config[key]
+
+    # Anything left in local_config needs to be removed
+    for key in local_config.keys():
+        config.remove_key(key)
+
+    config.save()
 
 
 def check_outstanding_packages():
@@ -437,10 +440,8 @@ def send_config_value(key, value):
 
 
 def update_and_run():
-    for folder in (
-        JOBS_DIR,
-    ):
-        os.makedirs(folder, mode=0o700, exist_ok=True)
+    """Main function for the jobmanager."""
+    os.makedirs(JOBS_DIR, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
     # Get OS info for configuration
     os_name = distro.name()
@@ -462,11 +463,15 @@ def update_and_run():
                 send_config_value("_os_release", os_release)
                 send_config_value("_os_name", os_name)
                 instructions = get_instructions()
+                if "jobs" in instructions:
+                    import_jobs(instructions["jobs"])
+                if "configuration" in instructions:
+                    update_configuration_from_server(instructions["configuration"])
                 fail_unfinished_jobs()
                 send_unsent_jobs()
                 run_pending_jobs()
                 if "security_scripts" in instructions:
-                    check_security_events(instructions['security_scripts'])
+                    check_security_events(instructions["security_scripts"])
             except (OSError, socket.error):
                 print("Network error, exiting ...")
                 traceback.print_exc()
