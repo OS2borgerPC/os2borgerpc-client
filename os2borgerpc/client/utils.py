@@ -5,11 +5,13 @@ system."""
 import os
 import sys
 import fcntl
-
+import urllib
 import contextlib
 import time
 import signal
 import errno
+
+from .config import OS2borgerPCConfig
 
 
 @contextlib.contextmanager
@@ -71,5 +73,3 @@ def get_url_and_uid():
     xml_rpc_url = config_data.get("xml_rpc_url", "/admin-xml/")
     rpc_url = urllib.parse.urljoin(admin_url, xml_rpc_url)
     return (rpc_url, uid)
-
-
