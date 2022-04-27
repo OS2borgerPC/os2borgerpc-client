@@ -58,3 +58,18 @@ def filelock(file_name, max_age=None):
             os.unlink(pid_file)
             fcntl.lockf(fd, fcntl.LOCK_UN)
             os.unlink(file_name)
+
+
+def get_url_and_uid():
+    config = OS2borgerPCConfig()
+    uid = config.get_value("uid")
+    config_data = config.get_data()
+    admin_url = config_data.get("admin_url")
+    if not admin_url:
+        print("Incorrect setup of OS2borgerPC admin client", file=sys.stderr)
+        return (None, None)
+    xml_rpc_url = config_data.get("xml_rpc_url", "/admin-xml/")
+    rpc_url = urllib.parse.urljoin(admin_url, xml_rpc_url)
+    return (rpc_url, uid)
+
+
