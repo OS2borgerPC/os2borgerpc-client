@@ -255,22 +255,10 @@ class TestJobManager:
 
         assert result is False
 
-    @freeze_time("2022-01-01 12:00:00")
     @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
     def test_import_new_security_scripts(self, tmpdir):
-        # Mock OS2borgerPCAdmin and return instructions on 'get_instructions'.
-        os2borgerpc_dir = tmpdir.mkdir("os2borgerpc")
         security_dir = tmpdir.mkdir("security")
 
-        os2borgerpcadmin_mock = mock.MagicMock()
-        jobmanager.OS2borgerPCAdmin = os2borgerpcadmin_mock
-        os2borgerpc_conf = os2borgerpc_dir.join("os2borgerpc.conf").ensure()
-
-        os2borgerpcconfig_mock = mock.MagicMock()
-        jobmanager.OS2borgerPCConfig = os2borgerpcconfig_mock
-        os2borgerpcconfig_mock.return_value = config.OS2borgerPCConfig(
-            [str(os2borgerpc_conf)]
-        )
         instructions = {
             "configuration": {
                 "admin_url": "test.com",
@@ -296,7 +284,6 @@ class TestJobManager:
                 }
             ],
         }
-        os2borgerpcadmin_mock.return_value.get_instructions.return_value = instructions
 
         with mock.patch(
             "os2borgerpc.client.security.security.SECURITY_DIR", Path(security_dir)
