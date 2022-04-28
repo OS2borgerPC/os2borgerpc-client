@@ -54,20 +54,20 @@ def run_security_scripts():
 
     with open(SECURITY_SCRIPTS_LOG_FILE, "a") as log:
         for script in SECURITY_DIR.glob("s_*"):
-            print(">>>" + script, file=log)
+            print(">>>" + str(script), file=log)
             cmd = [script]
             ret_val = subprocess.call(cmd, shell=True, stdout=log, stderr=log)
             if ret_val == 0:
-                print(">>>" + script + " Succeeded", file=log)
+                print(">>>" + str(script) + " Succeeded", file=log)
             else:
-                print(">>>" + script + " Failed", file=log)
+                print(">>>" + str(script) + " Failed", file=log)
 
 
 def collect_security_events(now):
     """Collect the security events from SECURITY_EVENT_FILE newer than last_check."""
     last_check = read_last_security_events_checked_time()
     if not last_check:
-        last_check = datetime.strptime(now, "%Y%m%d%H%M")
+        last_check = now
 
     # File does not exist. No events occured, since last check.
     if not os.path.exists(SECURITY_EVENT_FILE):
@@ -104,7 +104,7 @@ def send_security_events(security_events):
 def update_last_security_events_checked_time(datetime_obj):
     """Update LAST_SECURITY_EVENTS_CHECKED_TIME from a datetime object."""
     with open(LAST_SECURITY_EVENTS_CHECKED_TIME, "wt") as f:
-        f.write(datetime_obj)
+        f.write(datetime_obj.strftime("%Y%m%d%H%M"))
 
 
 def read_last_security_events_checked_time():

@@ -261,7 +261,7 @@ class LocalJob(dict):
         """Run the job."""
         self.read_property_from_file("status", self.status_path)
         if self["status"] != "SUBMITTED":
-            os.sys.stderr.write(
+            sys.stderr.write(
                 "Job %s: Will only run jobs with status %s\n"
                 % (self.id, self["status"])
             )
@@ -328,15 +328,15 @@ def get_instructions():
     return instructions
 
 
-def import_jobs(instructions):
+def import_jobs(jobs):
     """Import jobs from instructions and save them."""
-    for j in instructions["jobs"]:
+    for j in jobs:
         local_job = LocalJob(data=j)
         local_job.save()
         local_job.logline("Job imported at %s" % datetime.now())
 
 
-def update_configuration_from_server(instructions):
+def update_configuration_from_server(configurations):
     """Update (local) configuration from admin site server."""
     config = OS2borgerPCConfig()
     local_config = {}
@@ -345,7 +345,7 @@ def update_configuration_from_server(instructions):
         if isinstance(value, str):
             local_config[key] = value
 
-    for key, value in instructions["configuration"].items():
+    for key, value in configurations.items():
         config.set_value(key, value)
         if key in local_config:
             del local_config[key]
