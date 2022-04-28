@@ -220,7 +220,7 @@ class TestJobManager:
             mock.call("uid", security_events)
         ]
 
-        assert result == True
+        assert result is True
 
     @mock.patch(
         "os2borgerpc.client.security.security.get_url_and_uid", lambda: ("url", "uid")
@@ -253,13 +253,12 @@ class TestJobManager:
             mock.call("uid", security_events)
         ]
 
-        assert result == False
+        assert result is False
 
     @freeze_time("2022-01-01 12:00:00")
     @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
     def test_import_new_security_scripts(self, tmpdir):
         # Mock OS2borgerPCAdmin and return instructions on 'get_instructions'.
-        jobs = tmpdir.mkdir("jobs")
         os2borgerpc_dir = tmpdir.mkdir("os2borgerpc")
         security_dir = tmpdir.mkdir("security")
 
