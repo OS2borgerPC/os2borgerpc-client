@@ -3,9 +3,11 @@ from datetime import (
     datetime,
     timedelta,
 )
+from pathlib import Path
 from unittest import mock
 from freezegun import freeze_time
 
+from os2borgerpc.client.security import security
 from os2borgerpc.client import (
     jobmanager,
     config,
@@ -155,6 +157,7 @@ class TestJobManager:
 
     def test_collect_security_security_events(self, tmpdir):
         security_dir = tmpdir.mkdir("security")
+        security_event_file = security_dir.join("securityevent.csv")
 
         security_event_lines = (
             "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
@@ -163,95 +166,98 @@ class TestJobManager:
             " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
         )
         # Write some generated security events.
-        security_dir.join("securityevent.csv").write(security_event_lines)
+        security_event_file.write(security_event_lines)
 
         with mock.patch(
-            "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
+            "os2borgerpc.client.security.security.SECURITY_EVENT_FILE",
+            Path(security_event_file),
         ):
-            jobmanager.collect_security_events("202201011150")
+            last_check = datetime(year=2022, month=1, day=1, hour=11, minute=50)
+            security_events = security.collect_security_events(last_check)
 
-        # Assert they are now part of the security_check file.
-        assert (
-            security_dir.join("security_check_202201011150.csv").read()
-            == security_event_lines
-        )
+        # Assert the security_events are returned.
+        assert security_events == [
+            (
+                "202201011156,"
+                "Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0 ;"
+                " PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
+            ),
+            (
+                "202201011156,"
+                "Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: pam_unix(sudo:session):"
+                " session opened for user root by (uid=0)\n"
+            ),
+        ]
 
-    @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
+    @mock.patch(
+        "os2borgerpc.client.security.security.get_url_and_uid", lambda: ("url", "uid")
+    )
     def test_send_security_events_success(self, tmpdir):
         # Mock OS2borgerPCAdmin and return a success value on 'push_security_events'.
         os2borgerpcadmin_mock = mock.MagicMock()
-        jobmanager.OS2borgerPCAdmin = os2borgerpcadmin_mock
+        security.OS2borgerPCAdmin = os2borgerpcadmin_mock
         os2borgerpcadmin_mock.return_value.push_security_events.return_value = 0
 
-        security_dir = tmpdir.mkdir("security")
+        security_events = [
+            (
+                "202201011156,"
+                "Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0 ;"
+                " PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
+            ),
+            (
+                "202201011156,"
+                "Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: pam_unix(sudo:session):"
+                " session opened for user root by (uid=0)\n"
+            ),
+        ]
 
-        security_event_lines = (
-            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
-            " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
-            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
-            " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
-        )
-        # write security event lines to security_check file.
-        security_dir.join("security_check_202201011150.csv").write(security_event_lines)
-
-        with mock.patch(
-            "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
-        ):
-            jobmanager.send_security_events("202201011150")
+        result = security.send_security_events(security_events)
 
         # Assert security events are pushed.
-        security_events = os2borgerpcadmin_mock.return_value.push_security_events
+        security_events_mock = os2borgerpcadmin_mock.return_value.push_security_events
 
-        assert security_events.call_args_list == [
-            mock.call("uid", security_event_lines.splitlines(keepends=True))
+        assert security_events_mock.call_args_list == [
+            mock.call("uid", security_events)
         ]
-        # Assert lastcheck is updated.
-        assert security_dir.join("lastcheck.txt").read() == "202201011150"
-        # Assert security_check and securityevent files are deleted.
-        assert not security_dir.join("security_check_202201011150.csv").check()
-        assert not security_dir.join("securityevent.csv").check()
 
-    @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
+        assert result == True
+
+    @mock.patch(
+        "os2borgerpc.client.security.security.get_url_and_uid", lambda: ("url", "uid")
+    )
     def test_send_security_events_failed(self, tmpdir):
         # Mock OS2borgerPCAdmin and return a failed value on 'push_security_events'.
         os2borgerpcadmin_mock = mock.MagicMock()
-        jobmanager.OS2borgerPCAdmin = os2borgerpcadmin_mock
+        security.OS2borgerPCAdmin = os2borgerpcadmin_mock
+        # Server should return 1 or an integer other than 0.
         os2borgerpcadmin_mock.return_value.push_security_events.return_value = 1
 
-        security_dir = tmpdir.mkdir("security")
-
-        security_event_lines = (
-            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
-            " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
-            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
-            " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
-        )
-        # Write some generated security events.
-        security_dir.join("securityevent.csv").write(security_event_lines)
-        # write security event lines to security_check file.
-        security_dir.join("security_check_202201011150.csv").write(security_event_lines)
-
-        with mock.patch(
-            "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
-        ):
-            jobmanager.send_security_events("202201011150")
+        security_events = [
+            (
+                "202201011156,"
+                "Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0 ;"
+                " PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
+            ),
+            (
+                "202201011156,"
+                "Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: pam_unix(sudo:session):"
+                " session opened for user root by (uid=0)\n"
+            ),
+        ]
+        result = security.send_security_events(security_events)
 
         # Assert security events are pushed.
-        security_events = os2borgerpcadmin_mock.return_value.push_security_events
+        security_events_mock = os2borgerpcadmin_mock.return_value.push_security_events
 
-        assert security_events.call_args_list == [
-            mock.call("uid", security_event_lines.splitlines(keepends=True))
+        assert security_events_mock.call_args_list == [
+            mock.call("uid", security_events)
         ]
-        # Assert lastcheck is not updated.
-        assert not security_dir.join("lastcheck.txt").check()
-        # Assert securityevent file is kept.
-        assert security_dir.join("securityevent.csv").check()
-        # Assert security_check file is deleted
-        assert not security_dir.join("security_check_202201011150.csv").check()
+
+        assert result == False
 
     @freeze_time("2022-01-01 12:00:00")
     @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
-    def test_get_instructions(self, tmpdir):
+    def test_import_new_security_scripts(self, tmpdir):
         # Mock OS2borgerPCAdmin and return instructions on 'get_instructions'.
         jobs = tmpdir.mkdir("jobs")
         os2borgerpc_dir = tmpdir.mkdir("os2borgerpc")
@@ -293,21 +299,69 @@ class TestJobManager:
         }
         os2borgerpcadmin_mock.return_value.get_instructions.return_value = instructions
 
+        with mock.patch(
+            "os2borgerpc.client.security.security.SECURITY_DIR", Path(security_dir)
+        ):
+            security.import_new_security_scripts(instructions["security_scripts"])
+
+        security_script = security_dir.join("s_test_security_script.sh")
+        # Assert security script are created properly and are executable.
+        assert (
+            security_script.read() == "#!/usr/bin/env\necho 'this is a security script'"
+        )
+        assert security_script.stat().mode & stat.S_IXUSR
+
+    @freeze_time("2022-01-01 12:00:00")
+    @mock.patch("os2borgerpc.client.jobmanager.get_url_and_uid", lambda: ("url", "uid"))
+    def test_update_configuration_and_import_jobs(self, tmpdir):
+        # Mock OS2borgerPCAdmin and return instructions on 'get_instructions'.
+        jobs = tmpdir.mkdir("jobs")
+        os2borgerpc_dir = tmpdir.mkdir("os2borgerpc")
+
+        os2borgerpcadmin_mock = mock.MagicMock()
+        jobmanager.OS2borgerPCAdmin = os2borgerpcadmin_mock
+        os2borgerpc_conf = os2borgerpc_dir.join("os2borgerpc.conf").ensure()
+
+        os2borgerpcconfig_mock = mock.MagicMock()
+        jobmanager.OS2borgerPCConfig = os2borgerpcconfig_mock
+        os2borgerpcconfig_mock.return_value = config.OS2borgerPCConfig(
+            [str(os2borgerpc_conf)]
+        )
+        instructions = {
+            "configuration": {
+                "admin_url": "test.com",
+                "distribution": "os2borgerpc20.04",
+                "hostname": "shg-pc",
+                "site": "magenta",
+                "uid": "uid",
+            },
+            "jobs": [
+                {
+                    "id": 1,
+                    "status": "SUBMITTED",
+                    "parameters": [{"type": "string", "value": "hello parameter"}],
+                    "executable_code": "#!/usr/bin/env\necho $1",
+                },
+            ],
+            "security_scripts": [
+                {
+                    "name": "test_security_script.sh",
+                    "executable_code": (
+                        "#!/usr/bin/env\necho 'this is a security script'"
+                    ),
+                }
+            ],
+        }
+        os2borgerpcadmin_mock.return_value.get_instructions.return_value = instructions
+
         with mock.patch("os2borgerpc.client.jobmanager.JOBS_DIR", jobs):
-            with mock.patch(
-                "os2borgerpc.client.jobmanager.SECURITY_DIR", str(security_dir)
-            ):
-                jobmanager.get_instructions()
+            jobmanager.update_configuration_from_server(instructions["configuration"])
+            jobmanager.import_jobs(instructions["jobs"])
 
         job = jobs.join("1")
-        security_script = security_dir.join("s_test_security_script.sh")
-        # Assert job and security script are created properly and are executable.
+        # Assert job are created properly and are executable.
         assert job.check()
         assert job.join("status").read() == "SUBMITTED"
         assert job.join("executable").read() == "#!/usr/bin/env\necho $1"
         assert job.join("executable").stat().mode & stat.S_IXUSR
         assert job.join("output.log").read() == "Job imported at 2022-01-01 12:00:00\n"
-        assert (
-            security_script.read() == "#!/usr/bin/env\necho 'this is a security script'"
-        )
-        assert security_script.stat().mode & stat.S_IXUSR
