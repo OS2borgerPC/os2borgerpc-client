@@ -22,7 +22,7 @@ SECURITY_EVENT_FILE = SECURITY_DIR / "securityevent.csv"
 SECURITY_SCRIPTS_LOG_FILE = SECURITY_DIR / "security_log.txt"
 
 
-def cleanup_security_scripts(security_scripts):
+def cleanup_security_scripts():
     """Cleanup existing security scripts."""
     if SECURITY_DIR.is_dir():
         # Always remove the security scripts -- perhaps this PC has been
@@ -134,7 +134,7 @@ def check_security_events(security_scripts):
         update_last_security_events_checked_time(now)
         return
 
-    cleanup_security_scripts(security_scripts)
+    cleanup_security_scripts()
     import_new_security_scripts(security_scripts)
     run_security_scripts()
     new_security_events = collect_security_events(now)
