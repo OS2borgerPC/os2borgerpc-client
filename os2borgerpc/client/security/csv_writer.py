@@ -1,14 +1,9 @@
 """csv_writer module."""
 
 
-def write_data(data):
+def write_data(security_events):
     """Write security event line to security events file."""
-    if not data:
-        return
-
-    line = ""
-    for timestamp, event_content in data:
-        line = f"{timestamp}," + event_content.replace("\n", " ").replace("\r", "").replace(",", "")
-
     with open("/etc/os2borgerpc/security/securityevent.csv", "at") as csvfile:
-        csvfile.write(line + "\n")
+        for timestamp, event in security_events:
+            event_line = event.replace("\n", " ").replace("\r", "").replace(",", "")
+            csvfile.write(f"{timestamp},{event_line}\n")

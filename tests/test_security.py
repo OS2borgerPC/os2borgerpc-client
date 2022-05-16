@@ -1,8 +1,5 @@
 import stat
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime
 
 from pathlib import Path
 from unittest import mock
@@ -195,7 +192,7 @@ class TestCheckSecurityEvents:
             SECURITY_DIR=Path(security_dir),
             LAST_SECURITY_EVENTS_CHECKED_TIME=lastcheck,
             SECURITY_EVENT_FILE=security_event_file,
-        ) as values:
+        ):
             # Return success on send_security_events.
             send_security_events_mock.return_value = True
             with freeze_time(

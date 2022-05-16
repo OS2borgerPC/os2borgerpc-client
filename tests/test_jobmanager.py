@@ -3,11 +3,9 @@ from datetime import (
     datetime,
     timedelta,
 )
-from pathlib import Path
 from unittest import mock
 from freezegun import freeze_time
 
-from os2borgerpc.client.security import security
 from os2borgerpc.client import (
     jobmanager,
     config,
