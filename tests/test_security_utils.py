@@ -25,12 +25,12 @@ class TestLogRead:
         returned_data = [
             (
                 "202201011155",
-                "shg-borgerpc-3-1-1 sudo: pam_unix(sudo:session): "
+                "Jan 01 11:55:32 shg-borgerpc-3-1-1 sudo: pam_unix(sudo:session): "
                 "session closed for user root",
             ),
             (
                 "202201011156",
-                "shg-borgerpc-3-1-1 CRON[11314]: "
+                "Jan 01 11:56:55 shg-borgerpc-3-1-1 CRON[11314]: "
                 "pam_unix(cron:session): session opened for user root by (uid=0)",
             ),
         ]
