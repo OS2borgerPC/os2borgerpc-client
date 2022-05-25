@@ -207,3 +207,49 @@ class TestCheckSecurityEvents:
                 security.check_security_events(["stub-security-script"])
 
             assert len(send_security_events_mock.call_args_list) == 1
+
+
+class TestReadLastSecurityEventsCheckedTime:
+    def test_read_last_security_events_checked_time_success(self, tmpdir):
+        security_dir = tmpdir.mkdir("security")
+        lastcheck = security_dir.join("lastcheck")
+        # Set an example lastcheck time.
+        lastcheck.write("202201011200")
+
+        with mock.patch(
+            "os2borgerpc.client.security.security.LAST_SECURITY_EVENTS_CHECKED_TIME",
+            lastcheck,
+        ):
+            time = security.read_last_security_events_checked_time()
+
+        assert time == datetime(year=2022, month=1, day=1, hour=12, minute=0)
+
+    def test_read_last_security_events_checked_time_returns_none_on_empty(self, tmpdir):
+        security_dir = tmpdir.mkdir("security")
+        lastcheck = security_dir.join("lastcheck")
+        # Set an empty lastcheck time.
+        lastcheck.write("")
+
+        with mock.patch(
+            "os2borgerpc.client.security.security.LAST_SECURITY_EVENTS_CHECKED_TIME",
+            lastcheck,
+        ):
+            time = security.read_last_security_events_checked_time()
+
+        assert time is None
+
+
+class TestUpdateLastSecurityEventsCheckedTime:
+    @freeze_time("2022-01-01 12:01:01")
+    def test_update_last_security_events_checked_time_success(self, tmpdir):
+        security_dir = tmpdir.mkdir("security")
+        lastcheck = security_dir.join("lastcheck")
+        now = datetime.now()
+
+        with mock.patch(
+            "os2borgerpc.client.security.security.LAST_SECURITY_EVENTS_CHECKED_TIME",
+            lastcheck,
+        ):
+            security.update_last_security_events_checked_time(now)
+
+        assert lastcheck.read() == "202201011201"

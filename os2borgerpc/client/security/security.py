@@ -112,14 +112,16 @@ def read_last_security_events_checked_time():
     Read LAST_SECURITY_EVENTS_CHECKED_TIME.
 
     Read LAST_SECURITY_EVENTS_CHECKED_TIME to a datetime object
-    or an empty string.
+    or None.
     """
     if os.path.exists(LAST_SECURITY_EVENTS_CHECKED_TIME):
         with open(LAST_SECURITY_EVENTS_CHECKED_TIME, "r") as f:
             content = f.read()
+        if not content:
+            return None
         datetime_obj = datetime.strptime(content, "%Y%m%d%H%M")
         return datetime_obj
-    return ""
+    return None
 
 
 def check_security_events(security_scripts):
