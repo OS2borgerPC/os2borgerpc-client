@@ -1,3 +1,5 @@
+"""Module for jobmanager."""
+
 import os
 import sys
 import socket
@@ -6,20 +8,19 @@ import stat
 import urllib.parse
 import urllib.request
 import json
-import glob
 import re
 import subprocess
 import pkg_resources
 import distro
 import traceback
 
-from pathlib import Path
 from datetime import datetime
 
 from .config import OS2borgerPCConfig, has_config
 
 from .admin_client import OS2borgerPCAdmin
-from .utils import filelock
+from .utils import filelock, get_url_and_uid
+from .security.security import check_security_events
 
 
 # Keep this in sync with package name in setup.py
@@ -28,33 +29,28 @@ OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
 ).version
 DEFAULT_JOB_TIMEOUT = 900
 
-"""
-Directory structure for storing OS2borgerPC jobs:
-/var/lib/os2borgerpc/jobs/<id> - Files related to job with id <id>
-/var/lib/os2borgerpc/jobs/<id>/attachments - files needed to execute the job
-/var/lib/os2borgerpc/jobs/<id>/executable - the program that executes the job
-/var/lib/os2borgerpc/jobs/<id>/parameters.json - json file with parameters
-/var/lib/os2borgerpc/jobs/<id>/status - status file, created by runtime system
-/var/lib/os2borgerpc/jobs/<id>/started - created when job is started
-/var/lib/os2borgerpc/jobs/<id>/finished - created when job is finished/failed
-/var/lib/os2borgerpc/jobs/<id>/sent - created when job is sent back to server
-/var/lib/os2borgerpc/jobs/<id>/output.log - Logfile with output from the job
-"""
-
-"""
-Directory structure for OS2borgerPC security events (for historical reasons):
-/etc/os2borgerpc/security/securityevent.csv - Security event log file.
-/etc/os2borgerpc/security/ - Scripts to be executed by the jobmanager.
-/etc/os2borgerpc/security/security_check_YYYYMMDDHHmm.csv -
-files containing the events to be sent to the admin system.
-"""
-SECURITY_DIR = "/etc/os2borgerpc/security"
 JOBS_DIR = "/var/lib/os2borgerpc/jobs"
 LOCK_FILE = os.path.join(JOBS_DIR, "running")
 
 
 class LocalJob(dict):
+    """
+    Job Model representing a job received from the server.
+
+    Directory structure for storing OS2borgerPC jobs:
+    /var/lib/os2borgerpc/jobs/<id> - Files related to job with id <id>
+    /var/lib/os2borgerpc/jobs/<id>/attachments - files needed to execute the job
+    /var/lib/os2borgerpc/jobs/<id>/executable - the program that executes the job
+    /var/lib/os2borgerpc/jobs/<id>/parameters.json - json file with parameters
+    /var/lib/os2borgerpc/jobs/<id>/status - status file, created by runtime system
+    /var/lib/os2borgerpc/jobs/<id>/started - created when job is started
+    /var/lib/os2borgerpc/jobs/<id>/finished - created when job is finished/failed
+    /var/lib/os2borgerpc/jobs/<id>/sent - created when job is sent back to server
+    /var/lib/os2borgerpc/jobs/<id>/output.log - Logfile with output from the job
+    """
+
     def __init__(self, id=None, path=None, data=None):
+        """Primarily populates instance with data."""
         if id is None and data is not None and "id" in data:
             id = data["id"]
             del data["id"]
@@ -77,7 +73,7 @@ class LocalJob(dict):
                 self.id = m.group(1)
 
         if not os.path.isdir(self.path):
-            os.mkdir(self.path)
+            os.makedirs(self.path, mode=0o700, exist_ok=True)
 
         # Initialize with given data
         if data is not None:
@@ -85,42 +81,52 @@ class LocalJob(dict):
 
     @property
     def path(self):
+        """Return the job root path."""
         return os.path.join(JOBS_DIR, str(self.id))
 
     @property
     def attachments_path(self):
+        """Return the attachments path."""
         return os.path.join(self.path, "attachments")
 
     @property
     def executable_path(self):
+        """Return the executable path."""
         return os.path.join(self.path, "executable")
 
     @property
     def parameters_path(self):
+        """Return the parameters path."""
         return os.path.join(self.path, "parameters.json")
 
     @property
     def status_path(self):
+        """Return the status path."""
         return os.path.join(self.path, "status")
 
     @property
     def started_path(self):
+        """Return the started path."""
         return os.path.join(self.path, "started")
 
     @property
     def finished_path(self):
+        """Return the finished path."""
         return os.path.join(self.path, "finished")
 
     @property
     def sent_path(self):
+        """Return the sent path."""
         return os.path.join(self.path, "sent")
 
     @property
     def log_path(self):
+        """Return the output log path."""
         return os.path.join(self.path, "output.log")
 
     @property
     def report_data(self):
+        """Return the report data for the admin site."""
         self.load_from_path()
         result = {"id": self.id}
         for k in ["status", "started", "finished", "log_output"]:
@@ -128,22 +134,27 @@ class LocalJob(dict):
         return result
 
     def set_status(self, value):
+        """Set job status."""
         self["status"] = value
         self.save_property_to_file("status", self.status_path)
 
     def mark_started(self):
+        """Set started time."""
         self["started"] = str(datetime.now())
         self.save_property_to_file("started", self.started_path)
 
     def mark_finished(self):
+        """Set finished time."""
         self["finished"] = str(datetime.now())
         self.save_property_to_file("finished", self.finished_path)
 
     def mark_sent(self):
+        """Set sent time."""
         self["sent"] = str(datetime.now())
         self.save_property_to_file("sent", self.sent_path)
 
     def load_local_parameters(self):
+        """Load local job parameters."""
         self.read_property_from_file("json_params", self.parameters_path)
         if "json_params" in self:
             self["local_parameters"] = json.loads(self["json_params"])
@@ -152,6 +163,7 @@ class LocalJob(dict):
             self["local_parameters"] = []
 
     def load_from_path(self, full_info=False):
+        """Load properties from a path."""
         if not os.path.isdir(self.path):
             raise ValueError("%s is not a directory" % self.path)
 
@@ -166,6 +178,7 @@ class LocalJob(dict):
             self.load_local_parameters()
 
     def read_property_from_file(self, prop, file_path):
+        """Read property from file."""
         try:
             with open(file_path, "rt") as fh:
                 self[prop] = fh.read()
@@ -173,15 +186,18 @@ class LocalJob(dict):
             pass
 
     def save_property_to_file(self, prop, file_path):
+        """Save property to file."""
         if prop in self:
             with open(file_path, "wt") as fh:
                 fh.write(self[prop])
 
     def populate(self, data):
+        """Populate instance with data."""
         for k in data.keys():
             self[k] = data[k]
 
     def save(self):
+        """Save the instance."""
         self.save_property_to_file("executable_code", self.executable_path)
         self.save_property_to_file("status", self.status_path)
         self.save_property_to_file("started", self.started_path)
@@ -198,6 +214,7 @@ class LocalJob(dict):
                 param_fh.write(json.dumps(self["local_parameters"]))
 
     def translate_parameters(self):
+        """Translate job parameters from an url to a file or string value."""
         if "parameters" not in self:
             return
 
@@ -232,16 +249,19 @@ class LocalJob(dict):
                 local_params.append(param["value"])
 
     def log(self, message):
+        """Write message to log file."""
         with open(self.log_path, "at") as fh:
             fh.write(message)
 
     def logline(self, message):
+        """Write a single line to log file."""
         self.log(message + "\n")
 
     def run(self):
+        """Run the job."""
         self.read_property_from_file("status", self.status_path)
         if self["status"] != "SUBMITTED":
-            os.sys.stderr.write(
+            sys.stderr.write(
                 "Job %s: Will only run jobs with status %s\n"
                 % (self.id, self["status"])
             )
@@ -277,20 +297,8 @@ class LocalJob(dict):
         log.close()
 
 
-def get_url_and_uid():
-    config = OS2borgerPCConfig()
-    uid = config.get_value("uid")
-    config_data = config.get_data()
-    admin_url = config_data.get("admin_url")
-    if not admin_url:
-        print("Incorrect setup of OS2borgerPC admin client", file=sys.stderr)
-        return (None, None)
-    xml_rpc_url = config_data.get("xml_rpc_url", "/admin-xml/")
-    rpc_url = urllib.parse.urljoin(admin_url, xml_rpc_url)
-    return (rpc_url, uid)
-
-
 def get_job_timeout():
+    """Return the set job timeout, may be the default."""
     config = OS2borgerPCConfig()
 
     if has_config("job_timeout"):
@@ -305,6 +313,7 @@ def get_job_timeout():
 
 
 def get_instructions():
+    """Get instructions from the admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
@@ -316,53 +325,44 @@ def get_instructions():
         # No instructions likely = no network. Do not continue.
         raise
 
-    if "configuration" in instructions:
-        # Update configuration
-        config = OS2borgerPCConfig()
-        local_config = {}
-        for key, value in config.get_data().items():
-            # We only care about string values
-            if isinstance(value, str):
-                local_config[key] = value
+    return instructions
 
-        for key, value in instructions["configuration"].items():
-            config.set_value(key, value)
-            if key in local_config:
-                del local_config[key]
 
-        # Anything left in local_config needs to be removed
-        for key in local_config.keys():
-            config.remove_key(key)
+def import_jobs(jobs):
+    """Import jobs from instructions and save them."""
+    for j in jobs:
+        local_job = LocalJob(data=j)
+        local_job.save()
+        local_job.logline("Job imported at %s" % datetime.now())
 
-        config.save()
 
-    # Import jobs
-    if "jobs" in instructions:
-        for j in instructions["jobs"]:
-            local_job = LocalJob(data=j)
-            local_job.save()
-            local_job.logline("Job imported at %s" % datetime.now())
+def update_configuration_from_server(configurations):
+    """Update (local) configuration from admin site server."""
+    config = OS2borgerPCConfig()
+    local_config = {}
+    for key, value in config.get_data().items():
+        # We only care about string values
+        if isinstance(value, str):
+            local_config[key] = value
 
-    security_dir = Path(SECURITY_DIR)
-    # if security dir exists
-    if security_dir.is_dir():
-        # Always remove the old security scripts -- perhaps this PC has been
-        # moved to another group and no longer needs them
-        for old_script in security_dir.glob("s_*"):
-            old_script.unlink()
+    for key, value in configurations.items():
+        config.set_value(key, value)
+        if key in local_config:
+            del local_config[key]
 
-        # Import the fresh security scripts
-        if "security_scripts" in instructions:
-            for s in instructions["security_scripts"]:
-                script = security_dir.joinpath("s_" + s["name"].replace(" ", ""))
-                with script.open("wt") as fh:
-                    fh.write(s["executable_code"])
-                script.chmod(stat.S_IRWXU)
+    # Anything left in local_config needs to be removed
+    for key in local_config.keys():
+        config.remove_key(key)
+
+    config.save()
 
 
 def check_outstanding_packages():
-    # Get number of packages with updates and number of security updates.
-    # This is really a wrapper for apt-check.
+    """
+    Get number of packages with updates and number of security updates.
+
+    This is really a wrapper for apt-check.
+    """
     try:
         proc = subprocess.Popen(
             ["/usr/lib/update-notifier/apt-check"],
@@ -380,6 +380,7 @@ def check_outstanding_packages():
 
 
 def report_job_results(joblist):
+    """Report job results back to the admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
     remote.send_status_info(
@@ -388,6 +389,7 @@ def report_job_results(joblist):
 
 
 def flat_map(iterable, function):
+    """Flatten an iterable."""
     for i in iterable:
         v = function(i)
         if v:
@@ -395,6 +397,7 @@ def flat_map(iterable, function):
 
 
 def get_job_dirs(status_list):
+    """Return the directories of jobs with a status in status_list."""
     result = []
     # Return job directories sorted by job ID, to make sure they get executed
     # in a predictable order
@@ -420,6 +423,7 @@ def get_job_dirs(status_list):
 
 
 def run_pending_jobs():
+    """Run the submitted jobs."""
     dirs = get_job_dirs(status_list=["SUBMITTED"])
     results = []
 
@@ -432,6 +436,7 @@ def run_pending_jobs():
 
 
 def send_unsent_jobs():
+    """Send unsent done or failed jobs."""
     dirs = get_job_dirs(status_list=["DONE", "FAILED"])
     jobs = []
 
@@ -448,6 +453,7 @@ def send_unsent_jobs():
 
 
 def fail_unfinished_jobs():
+    """Fail jobs that are stuck in running state."""
     dirs = get_job_dirs(status_list=["RUNNING"])
     now = datetime.now()
 
@@ -466,108 +472,8 @@ def fail_unfinished_jobs():
             job.logline(">>> Failed due to timeout at %s" % (job["finished"]))
 
 
-def run_security_scripts():
-    try:
-        security_log_path = os.path.join(SECURITY_DIR, "security_log.txt")
-        if os.path.getsize(security_log_path) > 10000:
-            os.remove(security_log_path)
-
-        log = open(security_log_path, "a")
-    except (OSError):
-        # File does not exists, so we create it.
-        os.mknod(security_log_path)
-        log = open(security_log_path, "a")
-
-    for filename in glob.glob(SECURITY_DIR + "/s_*"):
-        print(">>>" + filename, file=log)
-        cmd = [filename]
-        ret_val = subprocess.call(cmd, shell=True, stdout=log, stderr=log)
-        if ret_val == 0:
-            print(">>>" + filename + " Succeeded", file=log)
-        else:
-            print(">>>" + filename + " Failed", file=log)
-
-    log.close()
-
-
-def collect_security_events(now):
-    # execute scripts
-    run_security_scripts()
-
-    try:
-        check_file = open(os.path.join(SECURITY_DIR, "lastcheck.txt"), "r")
-    except OSError:
-        # File does not exists, so we create it.
-        os.mknod(os.path.join(SECURITY_DIR, "lastcheck.txt"))
-        check_file = open(os.path.join(SECURITY_DIR, "lastcheck.txt"), "r")
-
-    last_security_check = datetime.strptime(now, "%Y%m%d%H%M")
-    last_check = check_file.read()
-    if last_check:
-        last_security_check = datetime.strptime(last_check, "%Y%m%d%H%M")
-
-    check_file.close()
-
-    try:
-        csv_file = open(os.path.join(SECURITY_DIR, "securityevent.csv"), "r")
-    except OSError:
-        # File does not exist. No events occured, since last check.
-        return False
-
-    data = ""
-    for line in csv_file:
-        csv_split = line.split(",")
-        if datetime.strptime(csv_split[0], "%Y%m%d%H%M") >= last_security_check:
-            data += line
-
-    # Check if any new events occured
-    if data != "":
-        with open(
-            os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"), "wt"
-        ) as (check_file):
-            check_file.write(data)
-
-    csv_file.close()
-
-
-def send_security_events(now):
-    (remote_url, uid) = get_url_and_uid()
-    remote = OS2borgerPCAdmin(remote_url)
-
-    try:
-        with open(SECURITY_DIR + "/security_check_" + now + ".csv", "r") as fh:
-            csv_data = [line for line in fh]
-
-        try:
-            result = remote.push_security_events(uid, csv_data)
-            if result == 0:
-                with open(
-                    os.path.join(SECURITY_DIR, "lastcheck.txt"), "wt"
-                ) as check_file:
-                    check_file.write(now)
-                os.remove(os.path.join(SECURITY_DIR, "securityevent.csv"))
-
-            return result
-        except Exception:
-            print("Error while sending security events", file=sys.stderr)
-            traceback.print_exc()
-            return False
-        finally:
-            os.remove(os.path.join(SECURITY_DIR, "security_check_" + now + ".csv"))
-    except OSError:
-        # File does not exist. No events occurred, since last check.
-        return False
-
-
-def handle_security_events():
-    # if security dir exists
-    if os.path.isdir(SECURITY_DIR):
-        now = datetime.now().strftime("%Y%m%d%H%M")
-        collect_security_events(now)
-        send_security_events(now)
-
-
 def send_config_value(key, value):
+    """Send config value to admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
@@ -575,11 +481,8 @@ def send_config_value(key, value):
 
 
 def update_and_run():
-    for folder in (
-        JOBS_DIR,
-        SECURITY_DIR,
-    ):
-        os.makedirs(folder, mode=0o700, exist_ok=True)
+    """Run the main function for the jobmanager."""
+    os.makedirs(JOBS_DIR, mode=0o700, exist_ok=True)
     config = OS2borgerPCConfig()
     # Get OS info for configuration
     os_name = distro.name()
@@ -600,11 +503,16 @@ def update_and_run():
                 )
                 send_config_value("_os_release", os_release)
                 send_config_value("_os_name", os_name)
-                get_instructions()
+                instructions = get_instructions()
+                if "jobs" in instructions:
+                    import_jobs(instructions["jobs"])
+                if "configuration" in instructions:
+                    update_configuration_from_server(instructions["configuration"])
                 fail_unfinished_jobs()
                 send_unsent_jobs()
                 run_pending_jobs()
-                handle_security_events()
+                security_scripts = instructions.get("security_scripts", [])
+                check_security_events(security_scripts)
             except (OSError, socket.error):
                 print("Network error, exiting ...")
                 traceback.print_exc()

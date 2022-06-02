@@ -1,17 +1,9 @@
-from datetime import datetime
-
-# Dont give timestamp as argument
-# csv format: TimeStamp, securityEventCode, Tec sum, Raw data
+"""csv_writer module."""
 
 
-def write_data(data):
-    if not data:
-        return
-
-    line = datetime.now().strftime("%Y%m%d%H%M")
-
-    for d in data:
-        line += "," + d.replace("\n", " ").replace("\r", "").replace(",", "")
-
+def write_data(security_events):
+    """Write security event line to security events file."""
     with open("/etc/os2borgerpc/security/securityevent.csv", "at") as csvfile:
-        csvfile.write(line + "\n")
+        for timestamp, event in security_events:
+            event_line = event.replace("\n", " ").replace("\r", "").replace(",", "")
+            csvfile.write(f"{timestamp},{event_line}\n")
