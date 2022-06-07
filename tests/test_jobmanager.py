@@ -107,6 +107,7 @@ class TestJobManager:
 
         pending_job = jobs.join("1")
         pending_job.join("status").write("SUBMITTED", mode="w+", ensure=True)
+        pending_job.join("parameters.json").write("[]", mode="w+", ensure=True)
         pending_job_executable = pending_job.join("executable")
         pending_job_executable.write(
             "#!/usr/bin/env sh\necho 'hello'", mode="w+", ensure=True
@@ -136,6 +137,7 @@ class TestJobManager:
         # Create a pending executable job.
         pending_job = jobs.join("1")
         pending_job.join("status").write("SUBMITTED", mode="w+", ensure=True)
+        pending_job.join("parameters.json").write("[]", mode="w+", ensure=True)
         pending_job_executable = pending_job.join("executable")
         pending_job_executable.write(
             "#!/usr/bin/env sh\nexit 1", mode="w+", ensure=True
