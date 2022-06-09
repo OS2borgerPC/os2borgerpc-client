@@ -226,7 +226,7 @@ class LocalJob(dict):
         params = self["parameters"]
         del self["parameters"]
         for index, param in enumerate(params):
-            if param["type"] == "FILE":
+            if param["type"] == "FILE" and param["value"]:
                 # Make sure we have the directory
                 if not os.path.isdir(self.attachments_path):
                     os.mkdir(self.attachments_path)
