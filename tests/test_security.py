@@ -172,8 +172,8 @@ class TestCheckSecurityEvents:
         security_event_file = security_dir.join("securityevent.csv")
 
         security_event_lines = (
-            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
-            " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
+            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: "
+            "root : TTY=pts/0 ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
             "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
             " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
         )
@@ -201,10 +201,11 @@ class TestCheckSecurityEvents:
                 security.check_security_events(["stub-security-script"])
 
             security_event_lines = (
-                "202201011156,Jan 01 11:56:05  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
-                " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
-                "202201011156,Jan 01 11:56:06  shg-borgerpc-3-1-1 sudo:"
-                " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
+                "202201011156,Jan 01 11:56:05  shg-borgerpc-3-1-1 sudo: "
+                "root : TTY=pts/0 ; PWD=/home/user ; USER=root "
+                "; COMMAND=/usr/bin/ls\n"
+                "202201011156,Jan 01 11:56:06  shg-borgerpc-3-1-1 sudo: "
+                "pam_unix(sudo:session): session opened for user root by (uid=0)\n"
             )
             security_event_file.write(security_event_lines)
             with freeze_time(
@@ -216,18 +217,22 @@ class TestCheckSecurityEvents:
             calls = [
                 mock.call(
                     [
-                        "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root"
-                        " : TTY=pts/0 ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n",
-                        "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: pam_unix"
-                        "(sudo:session): session opened for user root by (uid=0)\n",
+                        "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root "
+                        ": TTY=pts/0 ; PWD=/home/user ; USER=root ;"
+                        " COMMAND=/usr/bin/ls\n",
+                        "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: "
+                        "pam_unix(sudo:session): session opened for user "
+                        "root by (uid=0)\n",
                     ]
                 ),
                 mock.call(
                     [
                         "202201011156,Jan 01 11:56:05  shg-borgerpc-3-1-1 sudo: root"
-                        " : TTY=pts/0 ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n",
-                        "202201011156,Jan 01 11:56:06  shg-borgerpc-3-1-1 sudo: pam_unix"
-                        "(sudo:session): session opened for user root by (uid=0)\n",
+                        " : TTY=pts/0 ; PWD=/home/user ; USER=root ; "
+                        "COMMAND=/usr/bin/ls\n",
+                        "202201011156,Jan 01 11:56:06  shg-borgerpc-3-1-1 sudo: "
+                        "pam_unix(sudo:session): session opened for user root by "
+                        "(uid=0)\n",
                     ]
                 ),
             ]
