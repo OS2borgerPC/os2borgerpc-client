@@ -78,7 +78,7 @@ def collect_security_events(now):
     new_security_events = []
     for line in csv_file_lines:
         csv_split = line.split(",")
-        if datetime.strptime(csv_split[0], "%Y%m%d%H%M") > last_check:
+        if datetime.strptime(csv_split[0], "%Y%m%d%H%M") >= last_check:
             new_security_events.append(line)
 
     return new_security_events
