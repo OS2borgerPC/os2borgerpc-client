@@ -81,7 +81,8 @@ def collect_security_events(now):
         # TODO: As we use a resolution of minutes and not seconds
         # using ">=" results in duplicated security events if jobmanager is
         # run multiple times in the same minute, however only using ">"
-        # we miss security events that have run in the same minute, which is probably worse.
+        # we miss security events that have run in the same minute, which is
+        # probably worse.
         # Using seconds for resolution in the future would be better.
         if datetime.strptime(csv_split[0], "%Y%m%d%H%M") >= last_check:
             new_security_events.append(line)
