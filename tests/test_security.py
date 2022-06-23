@@ -14,9 +14,9 @@ class TestCollectSecurityEvents:
         security_event_file = security_dir.join("securityevent.csv")
 
         security_event_lines = (
-            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
+            "20220101115601,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0"
             " ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
-            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
+            "20220101115601,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
             " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
         )
         # Write some generated security events.
@@ -26,18 +26,20 @@ class TestCollectSecurityEvents:
             "os2borgerpc.client.security.security.SECURITY_EVENT_FILE",
             Path(security_event_file),
         ):
-            last_check = datetime(year=2022, month=1, day=1, hour=11, minute=50)
+            last_check = datetime(
+                year=2022, month=1, day=1, hour=11, minute=50, second=0
+            )
             security_events = security.collect_security_events(last_check)
 
         # Assert the security_events are returned.
         assert security_events == [
             (
-                "202201011156,"
+                "20220101115601,"
                 "Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root : TTY=pts/0 ;"
                 " PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
             ),
             (
-                "202201011156,"
+                "20220101115601,"
                 "Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: pam_unix(sudo:session):"
                 " session opened for user root by (uid=0)\n"
             ),
@@ -172,15 +174,15 @@ class TestCheckSecurityEvents:
         security_event_file = security_dir.join("securityevent.csv")
 
         security_event_lines = (
-            "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: "
+            "20220101115601,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: "
             "root : TTY=pts/0 ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/ls\n"
-            "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
+            "20220101115602,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo:"
             " pam_unix(sudo:session): session opened for user root by (uid=0)\n"
         )
         # Write some generated security events.
         security_event_file.write(security_event_lines)
         # Set a lastcheck time in the past (11:55).
-        lastcheck.write("202201011155")
+        lastcheck.write("20220101115500")
 
         send_security_events_mock = mock.MagicMock()
         with mock.patch.multiple(
@@ -194,47 +196,54 @@ class TestCheckSecurityEvents:
             SECURITY_EVENT_FILE=security_event_file,
         ):
             # Return success on send_security_events.
+            # These new events should be sent.
             send_security_events_mock.return_value = True
             with freeze_time(
                 datetime(year=2022, month=1, day=1, hour=11, minute=56, second=2)
             ):
                 security.check_security_events(["stub-security-script"])
 
-            security_event_lines = (
-                "202201011156,Jan 01 11:56:05  shg-borgerpc-3-1-1 sudo: "
-                "root : TTY=pts/0 ; PWD=/home/user ; USER=root "
-                "; COMMAND=/usr/bin/ls\n"
-                "202201011156,Jan 01 11:56:06  shg-borgerpc-3-1-1 sudo: "
-                "pam_unix(sudo:session): session opened for user root by (uid=0)\n"
-            )
-            security_event_file.write(security_event_lines)
-            with freeze_time(
-                datetime(year=2022, month=1, day=1, hour=12, minute=0, second=0)
-            ):
-                security.check_security_events(["stub-security-script"])
-
-            assert len(send_security_events_mock.call_args_list) == 2
+            assert len(send_security_events_mock.call_args_list) == 1
             calls = [
                 mock.call(
                     [
-                        "202201011156,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root "
+                        "20220101115601,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root "
                         ": TTY=pts/0 ; PWD=/home/user ; USER=root ;"
                         " COMMAND=/usr/bin/ls\n",
-                        "202201011156,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: "
+                        "20220101115602,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: "
                         "pam_unix(sudo:session): session opened for user "
                         "root by (uid=0)\n",
                     ]
-                ),
+                )
+            ]
+            assert send_security_events_mock.call_args_list == calls
+
+            security_event_lines = (
+                "20220101115601,Jan 01 11:56:05  shg-borgerpc-3-1-1 sudo: "
+                "root : TTY=pts/0 ; PWD=/home/user ; USER=root "
+                "; COMMAND=/usr/bin/ls\n"
+                "20220101115602,Jan 01 11:56:06  shg-borgerpc-3-1-1 sudo: "
+                "pam_unix(sudo:session): session opened for user root by (uid=0)\n"
+            )
+            security_event_file.write(security_event_lines)
+            # These old events should not be sent.
+            with freeze_time(
+                datetime(year=2022, month=1, day=1, hour=12, minute=0, second=2)
+            ):
+                security.check_security_events(["stub-security-script"])
+
+            assert len(send_security_events_mock.call_args_list) == 1
+            calls = [
                 mock.call(
                     [
-                        "202201011156,Jan 01 11:56:05  shg-borgerpc-3-1-1 sudo: root"
-                        " : TTY=pts/0 ; PWD=/home/user ; USER=root ; "
-                        "COMMAND=/usr/bin/ls\n",
-                        "202201011156,Jan 01 11:56:06  shg-borgerpc-3-1-1 sudo: "
-                        "pam_unix(sudo:session): session opened for user root by "
-                        "(uid=0)\n",
+                        "20220101115601,Jan 01 11:56:01  shg-borgerpc-3-1-1 sudo: root "
+                        ": TTY=pts/0 ; PWD=/home/user ; USER=root ;"
+                        " COMMAND=/usr/bin/ls\n",
+                        "20220101115602,Jan 01 11:56:02  shg-borgerpc-3-1-1 sudo: "
+                        "pam_unix(sudo:session): session opened for user "
+                        "root by (uid=0)\n",
                     ]
-                ),
+                )
             ]
             assert send_security_events_mock.call_args_list == calls
 
@@ -244,7 +253,7 @@ class TestReadLastSecurityEventsCheckedTime:
         security_dir = tmpdir.mkdir("security")
         lastcheck = security_dir.join("lastcheck")
         # Set an example lastcheck time.
-        lastcheck.write("202201011200")
+        lastcheck.write("20220101120000")
 
         with mock.patch(
             "os2borgerpc.client.security.security.LAST_SECURITY_EVENTS_CHECKED_TIME",
@@ -252,7 +261,7 @@ class TestReadLastSecurityEventsCheckedTime:
         ):
             time = security.read_last_security_events_checked_time()
 
-        assert time == datetime(year=2022, month=1, day=1, hour=12, minute=0)
+        assert time == datetime(year=2022, month=1, day=1, hour=12, minute=0, second=0)
 
     def test_read_last_security_events_checked_time_returns_none_on_empty(self, tmpdir):
         security_dir = tmpdir.mkdir("security")
@@ -282,4 +291,4 @@ class TestUpdateLastSecurityEventsCheckedTime:
         ):
             security.update_last_security_events_checked_time(now)
 
-        assert lastcheck.read() == "202201011201"
+        assert lastcheck.read() == "20220101120101"
