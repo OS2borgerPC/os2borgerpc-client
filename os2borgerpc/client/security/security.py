@@ -84,7 +84,7 @@ def collect_security_events(now):
         # we miss security events that have run in the same minute, which is
         # probably worse.
         # Using seconds for resolution in the future would be better.
-        if datetime.strptime(csv_split[0], "%Y%m%d%H%M") >= last_check:
+        if datetime.strptime(csv_split[0], "%Y%m%d%H%M%S") >= last_check:
             new_security_events.append(line)
 
     return new_security_events
@@ -110,7 +110,7 @@ def send_security_events(security_events):
 def update_last_security_events_checked_time(datetime_obj):
     """Update LAST_SECURITY_EVENTS_CHECKED_TIME from a datetime object."""
     with open(LAST_SECURITY_EVENTS_CHECKED_TIME, "wt") as f:
-        f.write(datetime_obj.strftime("%Y%m%d%H%M"))
+        f.write(datetime_obj.strftime("%Y%m%d%H%M%S"))
 
 
 def read_last_security_events_checked_time():
@@ -125,7 +125,10 @@ def read_last_security_events_checked_time():
             content = f.read()
         if not content:
             return None
-        datetime_obj = datetime.strptime(content, "%Y%m%d%H%M")
+        try:
+            datetime_obj = datetime.strptime(content, "%Y%m%d%H%M%S")
+        except ValueError:
+            return None
         return datetime_obj
     return None
 
