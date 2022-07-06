@@ -13,14 +13,15 @@ import subprocess
 import pkg_resources
 import distro
 import traceback
-
 from datetime import datetime
 
-from .config import OS2borgerPCConfig, has_config
+import requests
 
-from .admin_client import OS2borgerPCAdmin
-from .utils import filelock, get_url_and_uid
-from .security.security import check_security_events
+from os2borgerpc.client.config import OS2borgerPCConfig, has_config
+
+from os2borgerpc.client.admin_client import OS2borgerPCAdmin
+from os2borgerpc.client.utils import filelock, get_url_and_uid
+from os2borgerpc.client.security.security import check_security_events
 
 
 # Keep this in sync with package name in setup.py
@@ -487,6 +488,26 @@ def send_config_values(config_dict):
     remote = OS2borgerPCAdmin(remote_url)
 
     remote.push_config_keys(uid, config_dict)
+
+
+def get_newest_client_version():
+    """Get the newest client version from Pypi."""
+    response = requests.post("https://pypi.org/pypi/os2borgerpc-client/json")
+    json_object = response.json()
+    newest_version = json_object["info"]["version"]
+
+    return newest_version
+
+
+def update_client():
+    """Update the client via pip."""
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "-U", "os2borgerpc-client"]
+        )
+        sys.exit(0)
+    except subprocess.CalledProcessError:
+        pass
 
 
 def update_and_run():
