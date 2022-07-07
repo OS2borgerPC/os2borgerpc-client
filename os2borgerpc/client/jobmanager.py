@@ -481,12 +481,12 @@ def fail_unfinished_jobs():
             job.logline(">>> Failed due to timeout at %s" % (job["finished"]))
 
 
-def send_config_value(key, value):
+def send_config_values(config_dict):
     """Send config value to admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
-    remote.push_config_keys(uid, {key: value})
+    remote.push_config_keys(uid, config_dict)
 
 
 def update_and_run():
@@ -503,15 +503,17 @@ def update_and_run():
             job_timeout = DEFAULT_JOB_TIMEOUT
     else:
         job_timeout = DEFAULT_JOB_TIMEOUT
-        send_config_value("job_timeout", job_timeout)
+        send_config_values({"job_timeout": job_timeout})
     try:
         with filelock(LOCK_FILE, max_age=job_timeout):
             try:
-                send_config_value(
-                    "_os2borgerpc.client_version", OS2BORGERPC_CLIENT_VERSION
+                send_config_values(
+                    {
+                        "_os2borgerpc.client_version": OS2BORGERPC_CLIENT_VERSION,
+                        "_os_release": os_release,
+                        "_os_name": os_name,
+                    }
                 )
-                send_config_value("_os_release", os_release)
-                send_config_value("_os_name", os_name)
                 instructions = get_instructions()
                 if "jobs" in instructions:
                     import_jobs(instructions["jobs"])
