@@ -507,7 +507,8 @@ def update_client():
         )
         sys.exit(0)
     except subprocess.CalledProcessError:
-        pass
+        print("update_client failed\n", file=sys.stderr)
+        traceback.print_exc()
 
 
 def update_and_run():
