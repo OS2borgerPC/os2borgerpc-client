@@ -492,7 +492,7 @@ def send_config_values(config_dict):
 
 def get_newest_client_version():
     """Get the newest client version from Pypi."""
-    response = requests.post("https://pypi.org/pypi/os2borgerpc-client/json")
+    response = requests.get("https://pypi.org/pypi/os2borgerpc-client/json")
     json_object = response.json()
     newest_version = json_object["info"]["version"]
 

@@ -16,12 +16,16 @@ if not os.geteuid() == 0:
 
 # We are root!
 
-# Trying to update the client.
-if (
-    random.randint(1, 100) == 1
-    and not get_newest_client_version() == OS2BORGERPC_CLIENT_VERSION
-):
-    print("\n Updating client, please re-run jobmanager. \n")
-    update_client()
+# Perform an update-check with a random interval.
+if random.randint(1, 100) == 1:
+    print("Checking for new update to client.")
+    newest_client_version = get_newest_client_version()
+    print(
+        f"Newest client version: {newest_client_version}, "
+        f"Installed version: {OS2BORGERPC_CLIENT_VERSION}"
+    )
+    if not newest_client_version == OS2BORGERPC_CLIENT_VERSION:
+        print("Updating client, please re-run jobmanager.")
+        update_client()
 
 update_and_run()
