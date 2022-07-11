@@ -13,14 +13,13 @@ import subprocess
 import pkg_resources
 import distro
 import traceback
-
 from datetime import datetime
 
-from .config import OS2borgerPCConfig, has_config
+from os2borgerpc.client.config import OS2borgerPCConfig, has_config
 
-from .admin_client import OS2borgerPCAdmin
-from .utils import filelock, get_url_and_uid
-from .security.security import check_security_events
+from os2borgerpc.client.admin_client import OS2borgerPCAdmin
+from os2borgerpc.client.utils import filelock, get_url_and_uid
+from os2borgerpc.client.security.security import check_security_events
 
 
 # Keep this in sync with package name in setup.py

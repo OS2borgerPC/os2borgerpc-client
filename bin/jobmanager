@@ -2,12 +2,32 @@
 
 import os
 import sys
+import random
 
-from os2borgerpc.client.jobmanager import update_and_run
+from os2borgerpc.client.jobmanager import (
+    update_and_run,
+    OS2BORGERPC_CLIENT_VERSION,
+)
+from os2borgerpc.client.updater import (
+    get_newest_client_version,
+    update_client,
+)
 
 if not os.geteuid() == 0:
     sys.exit("\n Only root can run this program. \n")
 
 # We are root!
+
+# Perform an update-check with a random interval.
+if random.randint(1, 100) == 1:
+    print("Checking for new update to client.")
+    newest_client_version = get_newest_client_version()
+    print(
+        f"Newest client version: {newest_client_version}, "
+        f"Installed version: {OS2BORGERPC_CLIENT_VERSION}"
+    )
+    if not newest_client_version == OS2BORGERPC_CLIENT_VERSION:
+        print("Updating client, please re-run jobmanager.")
+        update_client()
 
 update_and_run()
