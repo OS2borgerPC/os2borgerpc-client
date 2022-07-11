@@ -5,10 +5,12 @@ import sys
 import random
 
 from os2borgerpc.client.jobmanager import (
-    get_newest_client_version,
-    update_client,
     update_and_run,
     OS2BORGERPC_CLIENT_VERSION,
+)
+from os2borgerpc.client.updater import (
+    get_newest_client_version,
+    update_client,
 )
 
 if not os.geteuid() == 0:

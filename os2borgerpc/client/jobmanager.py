@@ -15,8 +15,6 @@ import distro
 import traceback
 from datetime import datetime
 
-import requests
-
 from os2borgerpc.client.config import OS2borgerPCConfig, has_config
 
 from os2borgerpc.client.admin_client import OS2borgerPCAdmin
@@ -488,27 +486,6 @@ def send_config_values(config_dict):
     remote = OS2borgerPCAdmin(remote_url)
 
     remote.push_config_keys(uid, config_dict)
-
-
-def get_newest_client_version():
-    """Get the newest client version from Pypi."""
-    response = requests.get("https://pypi.org/pypi/os2borgerpc-client/json")
-    json_object = response.json()
-    newest_version = json_object["info"]["version"]
-
-    return newest_version
-
-
-def update_client():
-    """Update the client via pip."""
-    try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "-U", "os2borgerpc-client"]
-        )
-        sys.exit(0)
-    except subprocess.CalledProcessError:
-        print("update_client failed\n", file=sys.stderr)
-        traceback.print_exc()
 
 
 def update_and_run():
