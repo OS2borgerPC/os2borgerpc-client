@@ -1,3 +1,4 @@
+"""Module for gateway."""
 import os
 import re
 import socket
@@ -12,6 +13,7 @@ PORT = 42420
 
 
 def find_gateway(timeout=1):
+    """Find an available gateway server."""
     result = None
 
     if config.has_config("gateway"):

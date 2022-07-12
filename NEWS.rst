@@ -1,4 +1,21 @@
-Version 1.3.0, February  14, 2022
+Version 2.0.0, July 11, 2022
+----------------------------
+
+New in this version:
+
+- Build auto-updating itself into the client 
+- Refactor security system and separate it out into its own file
+- Consolidate calls to send_config_keys
+- Security system changed to use a resolution down to seconds rather than just minutes
+- Add automated tests
+- Remove parameters.json after script run, sanitize log output
+- Improved documentation
+- Allow uppercase in computer names again
+- Set /etc/hosts correctly
+- Add linting
+
+
+Version 1.3.0, February 14, 2022
 ---------------------------------
 
 New in this version:
@@ -19,6 +36,7 @@ New in this version:
 - New RPC endpoint (citizen_login) added to client to support integration with
   existing library login systems such as Cicero.
 
+
 Version 1.1.3, May 7, 2021
 -------------------------------
 
@@ -27,6 +45,7 @@ New in this version:
 - Display Ubuntu version in computer's configuration.
 - Fix ValueError/conversion error from YAML.
 - Improved documentation.
+
 
 Version 1.1.2, January 29, 2021
 -------------------------------

@@ -65,19 +65,25 @@ while true; do
     # installation:
     # - hostname
     #   Prompt user for new host name
-    echo "Indtast venligst et nyt navn for denne computer:"
-    echo "Navnet skal have en længde ml. 1-63 tegn,"
-    echo "og gyldige tegn er a-z, 0-9 og bindestreg (-)."
+    echo "Indtast venligst et nyt navn for denne computer:" \
+         "Navnet skal have en længde ml. 1-63 tegn," \
+         "og gyldige tegn er a-z, A-Z, 0-9 og bindestreg (-)."
     # https://www.man7.org/linux/man-pages/man7/hostname.7.html
-    read -r NEWHOSTNAME
-    while [[ ! "$NEWHOSTNAME" =~ ^[0-9a-z][0-9a-z-]{1,63}$ ]]; do
-      echo "Ugyldigt computernavn.  Prøv igen."
-      read -r NEWHOSTNAME
+    read -r NEW_COMPUTER_NAME
+    while [[ ! "$NEW_COMPUTER_NAME" =~ ^[0-9a-zA-Z][0-9a-zA-Z-]{1,63}$ ]]; do
+        echo "Ugyldigt computernavn.  Prøv igen."
+        read -r NEW_COMPUTER_NAME
     done
-    echo "$NEWHOSTNAME" > /etc/hostname
-    set_os2borgerpc_config hostname "$NEWHOSTNAME"
-    hostname "$NEWHOSTNAME"
-    sed -i -e "s/$HOSTNAME/$NEWHOSTNAME/" /etc/hosts
+
+    # Idea: Allow uppercase in the computername due to popular demand,
+    # but lowercase it so it's a valid hostname which is case insensitive
+    NEW_HOSTNAME=$(echo "$NEW_COMPUTER_NAME" | tr '[:upper:]' '[:lower:]')
+
+    echo "$NEW_HOSTNAME" > /etc/hostname
+    set_os2borgerpc_config hostname "$NEW_HOSTNAME"
+    hostname "$NEW_HOSTNAME"
+    sed --in-place /127.0.1.1/d /etc/hosts
+    sed --in-place "2i 127.0.1.1	$NEW_HOSTNAME" /etc/hosts
 
 
     # - site
@@ -108,29 +114,29 @@ while true; do
     unset DISTRO
     if [[ -r /etc/os-release ]]; then
         # shellcheck source=/dev/null
-    	. /etc/os-release
+    	  . /etc/os-release
         if [[ "$ID" = ubuntu ]]; then
-		if [[ "$VERSION_ID" = "14.04" ]]; then
-			DISTRO="BIBOS14.04"
-		elif [[ "$VERSION_ID" = "12.04" ]]; then
-			DISTRO="BIBOS12.04"
-		elif [[ "$VERSION_ID" = "16.04" ]]; then
-			DISTRO="BIBOS16.04"
-		elif [[ "$VERSION_ID" = "20.04" ]]; then
-			DISTRO="os2borgerpc20.04"
-		else
-			echo "Ubuntu versionen er ikke understøttet af OS2borgerPC systemet. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet."
-			echo "Indtast ID for PC'ens distribution:"
-			read -r DISTRO
-		fi
+            if [[ "$VERSION_ID" = "14.04" ]]; then
+                DISTRO="BIBOS14.04"
+            elif [[ "$VERSION_ID" = "12.04" ]]; then
+                DISTRO="BIBOS12.04"
+            elif [[ "$VERSION_ID" = "16.04" ]]; then
+                DISTRO="BIBOS16.04"
+            elif [[ "$VERSION_ID" = "20.04" ]]; then
+                DISTRO="os2borgerpc20.04"
+            else
+                echo "Ubuntu versionen er ikke understøttet af OS2borgerPC systemet. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet." \
+                     "Indtast ID for PC'ens distribution:"
+                read -r DISTRO
+            fi
         else
-		echo "Dette er ikke en Ubuntu maskine. OS2borgerPC systemet understøtter kun Ubuntu. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet."
-		echo "Indtast ID for PC'ens distribution:"
-	        read -r DISTRO
-	fi
+            echo "Dette er ikke en Ubuntu maskine. OS2borgerPC systemet understøtter kun Ubuntu. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet." \
+                 "Indtast ID for PC'ens distribution:"
+            read -r DISTRO
+        fi
     else
-    	echo "Vi kan ikke se hvilket operativ system der er installeret."
-        echo "Indtast venligst ID for PC'ens distribution:"
+        echo "Vi kan ikke se hvilket operativ system der er installeret." \
+             "Indtast venligst ID for PC'ens distribution:"
         read -r DISTRO
     fi
 
@@ -171,7 +177,7 @@ while true; do
 
     # OK, we got the config.
     # Do the deed.
-    if ! os2borgerpc_register_in_admin; then
+    if ! os2borgerpc_register_in_admin "$NEW_COMPUTER_NAME"; then
         fatal "Tilmelding mislykkedes" && continue || exit 1
     fi
 
@@ -182,9 +188,8 @@ while true; do
         echo "*/5 * * * * root $(command -v jobmanager)" >> /etc/cron.d/os2borgerpc-jobmanager
     fi
 
-    # Now randomize cron job to avoid everybody hitting the server every
-    # five minutes.
-    "$DIR/randomize_jobmanager.sh" 5
+    # Now randomize cron job to avoid everybody hitting the server every five minutes.
+    "$DIR/randomize_jobmanager.sh" 5 > /dev/null
 
 
     break

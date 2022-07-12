@@ -6,12 +6,13 @@ import urllib.parse
 from os2borgerpc.client.config import OS2borgerPCConfig
 from os2borgerpc.client.admin_client import OS2borgerPCAdmin
 
+# This is passed in as a positional argument
+computer_name = sys.argv[1]
 
 config = OS2borgerPCConfig()
 data = config.get_data()
 
 mac = data['mac']
-hostname = data['hostname']
 site = data['site']
 distribution = data['distribution']
 admin_url = data.get('admin_url', 'http://os2borgerpc-admin.magenta.dk/')
@@ -23,7 +24,7 @@ admin = OS2borgerPCAdmin(urllib.parse.urljoin(admin_url, xml_rpc_url))
 # Data collected, now register computer.
 
 try:
-    uid = admin.register_new_computer(mac, hostname, distribution, site, data)
+    uid = admin.register_new_computer(mac, computer_name, distribution, site, data)
     config.set_value('uid', uid)
     config.save()
 

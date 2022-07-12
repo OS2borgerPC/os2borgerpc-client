@@ -1,3 +1,5 @@
+"""Module for the OS2borgerPCConfig."""
+
 import os
 import os.path
 import yaml
@@ -36,10 +38,15 @@ def set_config(key, value, filenames=DEFAULT_CONFIG_FILES):
 
 
 class OS2borgerPCConfig:
-    def __init__(self, filenames=DEFAULT_CONFIG_FILES):
-        """Create new configuration object. Each configuration object is
-        defined by its ownership of exactly one configuration file."""
+    """Class representing the OS2borgerpc Config."""
 
+    def __init__(self, filenames=DEFAULT_CONFIG_FILES):
+        """
+        Create new configuration object.
+
+        Each configuration object is defined by its
+        ownership of exactly one configuration file.
+        """
         # Check if one of the candidate filenames exists. If one does, then
         # use it; otherwise, use (and thus create) the first one
         for f in filenames:
@@ -54,8 +61,11 @@ class OS2borgerPCConfig:
         self.load()
 
     def load(self):
-        """Load a configuration - initialize to empty configuration if file
-        does not exist."""
+        """
+        Load a configuration.
+
+        initialize to empty configuration if file does not exist.
+        """
         try:
             stream = open(self.filename, "r")
             self.yamldata = yaml.safe_load(stream)
@@ -76,6 +86,7 @@ class OS2borgerPCConfig:
     MASK = stat.S_IWGRP + stat.S_IROTH + stat.S_IWOTH + stat.S_IXOTH
 
     def save(self):
+        """Save the configuration."""
         try:
             d = os.path.dirname(self.filename)
             if len(d) > 0:
@@ -103,6 +114,7 @@ class OS2borgerPCConfig:
             raise
 
     def set_value(self, key, value):
+        """Set a value in the configuration."""
         current = self.yamldata
 
         i = key.find(".")
@@ -123,6 +135,7 @@ class OS2borgerPCConfig:
             current[key] = value
 
     def get_value(self, key):
+        """Get a value from the configuration."""
         current = self.yamldata
         i = key.find(".")
         while i != -1:
@@ -134,6 +147,7 @@ class OS2borgerPCConfig:
         return current[key]
 
     def remove_key(self, key):
+        """Remove a key from the configuration."""
         current = self.yamldata
         i = key.find(".")
         while i != -1:
@@ -146,6 +160,8 @@ class OS2borgerPCConfig:
             del current[key]
 
     def get_data(self):
+        """Get configuration data."""
+
         def _get_at(node, prefix):
             for k, v in node.items():
                 here = prefix + [k]
