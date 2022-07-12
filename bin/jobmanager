@@ -4,6 +4,8 @@ import os
 import sys
 import random
 
+import semver
+
 from os2borgerpc.client.jobmanager import (
     update_and_run,
     OS2BORGERPC_CLIENT_VERSION,
@@ -26,7 +28,7 @@ if random.randint(1, 100) == 1:
         f"Newest client version: {newest_client_version}, "
         f"Installed version: {OS2BORGERPC_CLIENT_VERSION}"
     )
-    if not newest_client_version == OS2BORGERPC_CLIENT_VERSION:
+    if semver.compare(newest_client_version, OS2BORGERPC_CLIENT_VERSION) == 1:
         print("Updating client, please re-run jobmanager.")
         update_client()
 
