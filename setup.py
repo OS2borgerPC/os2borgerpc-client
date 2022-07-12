@@ -14,7 +14,7 @@ setup(
     author_email="info@magenta-aps.dk",
     license="GPLv3",
     packages=["os2borgerpc.client", "os2borgerpc.client.security"],
-    install_requires=["PyYAML", "distro", "requests"],
+    install_requires=["PyYAML", "distro", "requests", "semver"],
     scripts=[
         "bin/get_os2borgerpc_config",
         "bin/set_os2borgerpc_config",
