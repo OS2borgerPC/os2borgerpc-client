@@ -232,7 +232,7 @@ class LocalJob(dict):
 
                 value = param["value"]
                 _, _, path, _, _, _ = urllib.parse.urlparse(value)
-                basename = path[path.rfind("/") + 1 :] or "file"
+                basename = path[path.rfind("/") + 1:] or "file"
                 local_filename = os.path.join(
                     self.attachments_path, str(index) + "_" + basename
                 )
@@ -391,9 +391,25 @@ def report_job_results(joblist):
     """Report job results back to the admin site server."""
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
+
+    # Sanitize log output so we're sure it's valid XML
+    valid_chars = r"[^A-Za-z0-9,~.\-_+:;%&|,!`$\"'<>\[\]æøå\r\n ]"
+    for job in joblist:
+        job["log_output"] = re.sub(valid_chars, "", job["log_output"])
+
     remote.send_status_info(
         uid, None, joblist, update_required=check_outstanding_packages()
     )
+    # Likely reason: The job log contained content that makes the XML invalid
+    # try:
+    # Solution: Overwrite the job logs with a simple text instead.
+    # except Fault:
+    #    for job in joblist:
+    #        job.log_output = "En log indeholdte ugyldig data. Hvis dette skete ved kørslen af et globalt script, så kontakt venligst Magenta"
+    #        remote.send_status_info(
+    #            uid, None, joblist, update_required=check_outstanding_packages()
+    #        )
+    #        traceback.print_exc()
 
 
 def flat_map(iterable, function):
