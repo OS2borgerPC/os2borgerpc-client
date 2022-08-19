@@ -1,19 +1,20 @@
 """Module for jobmanager."""
 
+from datetime import datetime
+import distro
+import json
 import os
-import sys
-import socket
 import os.path
+import pkg_resources
+import re
+import socket
 import stat
+import subprocess
+import sys
+import traceback
+import unicodedata
 import urllib.parse
 import urllib.request
-import json
-import re
-import subprocess
-import pkg_resources
-import distro
-import traceback
-from datetime import datetime
 
 from os2borgerpc.client.config import OS2borgerPCConfig, has_config
 
@@ -46,6 +47,12 @@ class LocalJob(dict):
     /var/lib/os2borgerpc/jobs/<id>/finished - created when job is finished/failed
     /var/lib/os2borgerpc/jobs/<id>/sent - created when job is sent back to server
     /var/lib/os2borgerpc/jobs/<id>/output.log - Logfile with output from the job
+
+    Job statuses:
+    SUBMITTED: Job has not been run yet
+    RUNNING: Job execution was just started
+    FAILED: Job ran, exiting with a nonzero status code (failure)
+    DONE: Job ran, exiting with status code zero (success)
     """
 
     def __init__(self, id=None, path=None, data=None):
@@ -392,10 +399,13 @@ def report_job_results(joblist):
     (remote_url, uid) = get_url_and_uid()
     remote = OS2borgerPCAdmin(remote_url)
 
-    # Sanitize log output so we're sure it's valid XML
-    valid_chars = r"[^A-Za-z0-9,~.\-_+:;%&|,!`$\"'<>«»2\[\]æøå\r\n ]"
+    # Sanitize log output so we're sure it's valid XML before XMLRPC request
     for job in joblist:
-        job["log_output"] = re.sub(valid_chars, "", job["log_output"])
+        job["log_output"] = "".join(
+            ch
+            for ch in job["log_output"]
+            if unicodedata.category(ch)[0] != "C" or ch == "\n"
+        )
 
     remote.send_status_info(
         uid, None, joblist, update_required=check_outstanding_packages()
