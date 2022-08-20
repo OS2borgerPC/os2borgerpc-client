@@ -1,3 +1,11 @@
+Version 2.0.1, August 22, 2022
+------------------------------
+
+New in this version:
+
+- Fix a bug so control characters in log_output which cause xmlrpc to fail are
+  filtered out before sending them to the server
+
 Version 2.0.0, July 11, 2022
 ----------------------------
 
@@ -6,7 +14,8 @@ New in this version:
 - Build auto-updating itself into the client 
 - Refactor security system and separate it out into its own file
 - Consolidate calls to send_config_keys
-- Security system changed to use a resolution down to seconds rather than just minutes
+- Security system changed to use a resolution down to seconds rather than just
+  minutes
 - Add automated tests
 - Remove parameters.json after script run, sanitize log output
 - Improved documentation
