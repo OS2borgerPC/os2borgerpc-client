@@ -1,12 +1,12 @@
 from setuptools import setup
 
-with open("README.rst", "r") as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
+    # Keep this name in sync with the one in os2borgerpc_client/jobmanager.py
     name="os2borgerpc_client",
-    # Keep this in sync with os2borgerpc_client/jobmanager.py
-    version="2.0.0",
+    version="2.0.1",
     description="Client for the OS2borgerPC system",
     long_description=long_description,
     url="https://github.com/OS2borgerPC/",
