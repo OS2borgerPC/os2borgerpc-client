@@ -563,9 +563,9 @@ def update_and_run():
                     import_jobs(instructions["jobs"])
                 if "configuration" in instructions:
                     update_configuration_from_server(instructions["configuration"])
+                run_pending_jobs()
                 fail_unfinished_jobs()
                 send_unsent_jobs()
-                run_pending_jobs()
                 security_scripts = instructions.get("security_scripts", [])
                 check_security_events(security_scripts)
             except (OSError, socket.error):
