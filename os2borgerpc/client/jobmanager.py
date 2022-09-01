@@ -436,9 +436,12 @@ def report_job_results(joblist):
             if unicodedata.category(ch)[0] != "C" or ch == "\n"
         )
 
-    remote.send_status_info(
-        uid, None, joblist, update_required=check_outstanding_packages()
-    )
+    try:
+        remote.send_status_info(
+            uid, None, joblist, update_required=check_outstanding_packages()
+        )
+    except Exception:
+        print("Failed to check in with the admin-site")
 
 
 def flat_map(iterable, function):
