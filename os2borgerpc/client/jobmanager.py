@@ -437,11 +437,13 @@ def report_job_results(joblist):
         )
 
     try:
-        remote.send_status_info(
+        # This returns 0 on various interpretations of success
+        return remote.send_status_info(
             uid, None, joblist, update_required=check_outstanding_packages()
         )
     except Exception:
         print("Failed to check in with the admin-site")
+        return 1
 
 
 def flat_map(iterable, function):
@@ -502,10 +504,10 @@ def send_unsent_jobs():
         if "sent" not in job or not job["sent"]:
             jobs.append(job)
 
-    report_job_results([job.report_data for job in jobs])
+    if report_job_results([job.report_data for job in jobs]) == 0:
 
-    for job in jobs:
-        job.mark_sent()
+        for job in jobs:
+            job.mark_sent()
 
 
 def fail_unfinished_jobs():
