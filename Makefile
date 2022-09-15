@@ -17,6 +17,11 @@ release-testpypi: release-prepare all
 test:
 	tox
 
+# If tox fails with requirements missing it might be because it keeps a virtualenv around and doesn't automatically
+# install things from requirements-test.txt. In that case do this:
+test-rebuild:
+	tox --recreate -e py3-default
+
 # Compile the client to dist/
 build:
 	python3 setup.py sdist
