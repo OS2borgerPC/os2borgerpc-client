@@ -443,6 +443,7 @@ def report_job_results(joblist):
         )
     except Exception:
         print("Failed to check in with the admin-site")
+        traceback.print_exc()
         return 1
 
 
