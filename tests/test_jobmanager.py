@@ -33,6 +33,7 @@ class TestJobManager:
     def test_send_unsent_jobs(self, tmpdir):
         now = datetime.now()
         report_job_results_mock = mock.MagicMock()
+        report_job_results_mock.return_value = 0
         jobmanager.report_job_results = report_job_results_mock
 
         jobs = tmpdir.mkdir("jobs")
