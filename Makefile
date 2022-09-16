@@ -8,10 +8,10 @@ release-prepare:
 
 # --extra-index-url is set to regular pypi below so dependencies like pyyaml are downloaded from there
 release-testpypi: release-prepare all
-	@printf '\n%s' "First clean up so we don't upload old packages along with the new one" \
+	@printf '\n%s' "First clean up so we don't upload old packages along with the new one"
 	twine upload --repository testpypi dist/*
 	@printf '\n%s' 'Now you or others can install it like this: ' \ 
-	@printf '%s\n' 'pip install --force-reinstall --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ os2borgerpc-client'
+	@printf '%s\n' 'sudo pip install --force-reinstall --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ os2borgerpc-client'
 
 # Prerequisites: Install tox (from pip or your distro), then tox.ini installs what's in requirements-test.txt and runs the test
 test:
