@@ -3,3 +3,4 @@ pytest-cov==3.0.0
 coverage==6.3.2
 freezegun==1.2.1
 distro==1.7.0
+chardet==4.0.0

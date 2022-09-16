@@ -1,11 +1,6 @@
 """Module for jobmanager."""
-
-from datetime import datetime
-import distro
 import json
-import os
 import os.path
-import pkg_resources
 import re
 import socket
 import stat
@@ -15,12 +10,18 @@ import traceback
 import unicodedata
 import urllib.parse
 import urllib.request
+from datetime import datetime
 
-from os2borgerpc.client.config import OS2borgerPCConfig, has_config
+import chardet
+import distro
+import pkg_resources
 
 from os2borgerpc.client.admin_client import OS2borgerPCAdmin
-from os2borgerpc.client.utils import filelock, get_url_and_uid
+from os2borgerpc.client.config import has_config
+from os2borgerpc.client.config import OS2borgerPCConfig
 from os2borgerpc.client.security.security import check_security_events
+from os2borgerpc.client.utils import filelock
+from os2borgerpc.client.utils import get_url_and_uid
 
 
 # Keep this in sync with package name in setup.py
@@ -183,11 +184,38 @@ class LocalJob(dict):
             self.read_property_from_file("executable_code", self.executable_path)
             self.load_local_parameters()
 
+    def handle_unsupported_file_encoding(self, prop, file_path):
+        """Error handling in case a file has an unsupported file encoding."""
+        if file_path == self.log_path:  # If the current property is a log file
+            self[
+                prop
+            ] = "The log had an unsupported file encoding (neither utf-8 nor latin-1)"
+        else:
+            self[prop] = ""
+
     def read_property_from_file(self, prop, file_path):
         """Read property from file."""
         try:
-            with open(file_path, "rt") as fh:
-                self[prop] = fh.read()
+            with open(file_path, "rb") as file_detect:
+                text_detect = file_detect.read()
+                file_detect = chardet.detect(text_detect)
+
+            if (
+                file_detect["encoding"] == "windows-1252"
+                or file_detect["encoding"] == "ISO-8859-1"
+            ):
+                try:
+                    with open(file_path, "rt", encoding="latin-1") as fh:
+                        self[prop] = fh.read()
+                except Exception:
+                    self.handle_unsupported_file_encoding(prop, file_path)
+            else:  # Assuming utf-8
+                try:
+                    with open(file_path, "rt") as fh:
+                        self[prop] = fh.read()
+                except UnicodeDecodeError:
+                    self.handle_unsupported_file_encoding(prop, file_path)
+
         except OSError:
             pass
 
@@ -401,15 +429,22 @@ def report_job_results(joblist):
 
     # Sanitize log output so we're sure it's valid XML before XMLRPC request
     for job in joblist:
+        # Remove terminal control characters except newlines
         job["log_output"] = "".join(
             ch
             for ch in job["log_output"]
             if unicodedata.category(ch)[0] != "C" or ch == "\n"
         )
 
-    remote.send_status_info(
-        uid, None, joblist, update_required=check_outstanding_packages()
-    )
+    try:
+        # This returns 0 on various interpretations of success
+        return remote.send_status_info(
+            uid, None, joblist, update_required=check_outstanding_packages()
+        )
+    except Exception:
+        print("Failed to check in with the admin-site")
+        traceback.print_exc()
+        return 1
 
 
 def flat_map(iterable, function):
@@ -470,10 +505,10 @@ def send_unsent_jobs():
         if "sent" not in job or not job["sent"]:
             jobs.append(job)
 
-    report_job_results([job.report_data for job in jobs])
+    if report_job_results([job.report_data for job in jobs]) == 0:
 
-    for job in jobs:
-        job.mark_sent()
+        for job in jobs:
+            job.mark_sent()
 
 
 def fail_unfinished_jobs():
@@ -534,9 +569,9 @@ def update_and_run():
                     import_jobs(instructions["jobs"])
                 if "configuration" in instructions:
                     update_configuration_from_server(instructions["configuration"])
+                run_pending_jobs()
                 fail_unfinished_jobs()
                 send_unsent_jobs()
-                run_pending_jobs()
                 security_scripts = instructions.get("security_scripts", [])
                 check_security_events(security_scripts)
             except (OSError, socket.error):

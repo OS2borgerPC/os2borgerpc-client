@@ -1,3 +1,14 @@
+Version 2.1.0, September 15, 2022
+---------------------------------
+
+New in this version:
+
+- Fix a bug so logs in non-UTF-8 character sets are handled in some fashion.
+  Especially latin-1.
+- Run pending jobs before dealing with unsent jobs, so if unsent jobs cause 
+  jobmanager to crash, it can still be solved by running new scripts.
+- If check-in with the adminsite fails continue to run anyway.
+
 Version 2.0.1, August 22, 2022
 ------------------------------
 
