@@ -124,6 +124,8 @@ while true; do
                 DISTRO="BIBOS16.04"
             elif [[ "$VERSION_ID" = "20.04" ]]; then
                 DISTRO="os2borgerpc20.04"
+            elif [[ "$VERSION_ID" = "22.04" ]]; then
+                DISTRO="os2borgerpc22.04"
             else
                 echo "Ubuntu versionen er ikke understøttet af OS2borgerPC systemet. Du kan alligevel godt forsøge at tilmelde PC'en til admin systemet." \
                      "Indtast ID for PC'ens distribution:"
