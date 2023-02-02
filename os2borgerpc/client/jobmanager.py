@@ -506,7 +506,6 @@ def send_unsent_jobs():
             jobs.append(job)
 
     if report_job_results([job.report_data for job in jobs]) == 0:
-
         for job in jobs:
             job.mark_sent()
 
