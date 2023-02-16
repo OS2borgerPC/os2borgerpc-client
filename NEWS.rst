@@ -1,3 +1,13 @@
+Version 2.1.1, February 16, 2023
+--------------------------------
+
+New in this version:
+
+- Make the client support any distribution without printing an error
+  (mainly to prepare for supporting 22.04 ).
+- Make push_config_keys print out an error when receiving zero arguments and explain why.
+- Black got new formatting rules. Apply them.
+
 Version 2.1.0, September 15, 2022
 ---------------------------------
 
@@ -5,7 +15,7 @@ New in this version:
 
 - Fix a bug so logs in non-UTF-8 character sets are handled in some fashion.
   Especially latin-1.
-- Run pending jobs before dealing with unsent jobs, so if unsent jobs cause 
+- Run pending jobs before dealing with unsent jobs, so if unsent jobs cause
   jobmanager to crash, it can still be solved by running new scripts.
 - If check-in with the adminsite fails continue to run anyway.
 
@@ -15,24 +25,24 @@ Version 2.0.1, August 22, 2022
 New in this version:
 
 - Fix a bug so control characters in log_output which cause xmlrpc to fail are
-  filtered out before sending them to the server
+  filtered out before sending them to the server.
 
 Version 2.0.0, July 11, 2022
 ----------------------------
 
 New in this version:
 
-- Build auto-updating itself into the client 
-- Refactor security system and separate it out into its own file
-- Consolidate calls to send_config_keys
+- Build auto-updating itself into the client.
+- Refactor security system and separate it out into its own file.
+- Consolidate calls to send_config_keys.
 - Security system changed to use a resolution down to seconds rather than just
-  minutes
-- Add automated tests
-- Remove parameters.json after script run, sanitize log output
-- Improved documentation
-- Allow uppercase in computer names again
-- Set /etc/hosts correctly
-- Add linting
+  minutes.
+- Add automated tests.
+- Remove parameters.json after script run, sanitize log output.
+- Improved documentation.
+- Allow uppercase in computer names again.
+- Set /etc/hosts correctly.
+- Add linting.
 
 
 Version 1.3.0, February 14, 2022
