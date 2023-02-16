@@ -2,9 +2,15 @@
 
 @default: test build
 
+# Run black linting on the codebase
 black:
   black .
 
+# Install dependencies for building the package which is wheel + deps in setup.py
+install-deps:
+  pip install wheel PyYAML distro requests semver chardet
+
+# All releases are uploaded via the twine command below, so if you have old versions lying around delete those first
 release-prepare:
   rm -rf dist
 
@@ -25,6 +31,6 @@ test-rebuild:
   tox --recreate -e py3-default
 
 # Compile the client to dist/
-build:
+build: install-deps
   python3 setup.py sdist
   python3 setup.py bdist_wheel --universal
