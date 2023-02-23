@@ -14,7 +14,6 @@ data = config.get_data()
 
 mac = data['mac']
 site = data['site']
-distribution = data['distribution']
 admin_url = data.get('admin_url', 'http://os2borgerpc-admin.magenta.dk/')
 xml_rpc_url = data.get('xml_rpc_url', '/admin-xml/')
 urllib.parse.urljoin(admin_url, xml_rpc_url)
@@ -24,7 +23,7 @@ admin = OS2borgerPCAdmin(urllib.parse.urljoin(admin_url, xml_rpc_url))
 # Data collected, now register computer.
 
 try:
-    uid = admin.register_new_computer(mac, computer_name, distribution, site, data)
+    uid = admin.register_new_computer(mac, computer_name, None, site, data)
     config.set_value('uid', uid)
     config.save()
 
