@@ -10,13 +10,14 @@ black:
 install-deps:
   pip install wheel PyYAML distro requests semver chardet
 
-# All releases are uploaded via the twine command below, so if you have old versions lying around delete those first
+# All releases are uploaded via the twine command below which uploads anything under dist/,
+# so if you have old versions lying around delete those first
 release-prepare:
-  rm -rf dist
+  rm --recursive --force dist
 
 # --extra-index-url is set to regular pypi below so dependencies like pyyaml are downloaded from there
 release-testpypi: release-prepare default
-  # First clean up so we don't upload old packages along with the new one
+  # Important!: First clean up so we don't upload old packages along with the new one
   twine upload --repository testpypi dist/*
   # Now you or others can install it like this:
   # sudo pip install --force-reinstall --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ os2borgerpc-client
@@ -32,5 +33,8 @@ test-rebuild:
 
 # Compile the client to dist/
 build: install-deps
+  # Important!: First delete the build directory as this may contain old versions of the files
+  # which are then used to build the wheel version of the package
+  rm --recursive --force build
   python3 setup.py sdist
   python3 setup.py bdist_wheel --universal
