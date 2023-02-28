@@ -1,6 +1,6 @@
 # We deliberately don't currently have a release to production target, because this shouldn't be doable accidentally but only after extensive testing
 
-@default: test build
+@default: test release-prepare build
 
 # Run black linting on the codebase
 black:
