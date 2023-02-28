@@ -12,19 +12,20 @@ from os2borgerpc.client.updater import (
     # update_client_test,
 )
 
+# Higher values means check for updates less often
+UPDATE_FREQUENCY = 100
+
 if not os.geteuid() == 0:
     sys.exit("\n Only root can run this program. \n")
 
 # We are root!
 
 # Keep this in sync with package name in setup.py
-# This is deliberatly duplicated here and in jobmanager.py to not be dependent on jobmanager.py
+# This is deliberatly duplicated here and in jobmanager.py to not be
+# dependent on jobmanager.py
 OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
     "os2borgerpc_client"
 ).version
-
-# Higher values means check for updates less often
-UPDATE_FREQUENCY = 150
 
 # Perform an update-check with a random interval.
 if random.randint(1, UPDATE_FREQUENCY) == 1:
@@ -37,10 +38,10 @@ if random.randint(1, UPDATE_FREQUENCY) == 1:
     if semver.compare(newest_client_version, OS2BORGERPC_CLIENT_VERSION) == 1:
         print("Updating client, please re-run jobmanager.")
         update_client()
-        #update_client_test()
+        # update_client_test()
 
 # Important: Deliberately wait with this import to after the update process, so updating
 # keeps working even if this import or anything in it fails
-from os2borgerpc.client.jobmanager import update_and_run
+from os2borgerpc.client.jobmanager import update_and_run  # noqa: E402
 
 update_and_run()
