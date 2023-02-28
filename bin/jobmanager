@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 
 import os
-import sys
+import pkg_resources
 import random
-
 import semver
+import sys
 
-from os2borgerpc.client.jobmanager import (
-    update_and_run,
-    OS2BORGERPC_CLIENT_VERSION,
-)
 from os2borgerpc.client.updater import (
     get_newest_client_version,
     update_client,
+    # update_client_test,
 )
 
 if not os.geteuid() == 0:
@@ -20,8 +17,17 @@ if not os.geteuid() == 0:
 
 # We are root!
 
+# Keep this in sync with package name in setup.py
+# This is deliberatly duplicated here and in jobmanager.py to not be dependent on jobmanager.py
+OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
+    "os2borgerpc_client"
+).version
+
+# Higher values means check for updates less often
+UPDATE_FREQUENCY = 150
+
 # Perform an update-check with a random interval.
-if random.randint(1, 100) == 1:
+if random.randint(1, UPDATE_FREQUENCY) == 1:
     print("Checking for new update to client.")
     newest_client_version = get_newest_client_version()
     print(
@@ -31,5 +37,10 @@ if random.randint(1, 100) == 1:
     if semver.compare(newest_client_version, OS2BORGERPC_CLIENT_VERSION) == 1:
         print("Updating client, please re-run jobmanager.")
         update_client()
+        #update_client_test()
+
+# Important: Deliberately wait with this import to after the update process, so updating
+# keeps working even if this import or anything in it fails
+from os2borgerpc.client.jobmanager import update_and_run
 
 update_and_run()
