@@ -31,6 +31,10 @@ test:
 test-rebuild:
   tox --recreate -e py3-default
 
+# tox install
+install-tox:
+  sudo pip install tox
+
 # Compile the client to dist/
 build: install-deps
   # Important!: First delete the build directory as this may contain old versions of the files
