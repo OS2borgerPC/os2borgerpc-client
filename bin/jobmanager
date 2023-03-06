@@ -6,10 +6,10 @@ import random
 import semver
 import sys
 
-from os2borgerpc.client.updater import (
+from os2borgerpc.client.updater import (   # noqa: F401
     get_newest_client_version,
     update_client,
-    # update_client_test,
+    update_client_test,
 )
 
 # Higher values: Check for updates less often
