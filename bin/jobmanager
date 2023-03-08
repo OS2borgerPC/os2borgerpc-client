@@ -5,12 +5,31 @@ import pkg_resources
 import random
 import semver
 import sys
+import subprocess
 
-from os2borgerpc.client.updater import (   # noqa: F401
-    get_newest_client_version,
-    update_client,
-    update_client_test,
-)
+try:
+    from os2borgerpc.client.updater import (  # noqa: F401
+        get_newest_client_version,
+        update_client,
+        update_client_test,
+    )
+    from os2borgerpc.client.jobmanager import update_and_run  # noqa: E402
+except ImportError:
+    # If any of the imports fail, reinstall the client
+    try:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "--force-reinstall",
+                "os2borgerpc-client",
+            ]
+        )
+        sys.exit(0)
+    except subprocess.CalledProcessError:
+        print("Restoring client failed\n", file=sys.stderr)
 
 # Higher values: Check for updates less often
 UPDATE_FREQUENCY = 200
@@ -39,9 +58,5 @@ if random.randint(1, UPDATE_FREQUENCY) == 1:
     if semver.compare(newest_client_version, OS2BORGERPC_CLIENT_VERSION) == 1:
         print("Updating client, please re-run jobmanager.")
         update_client()
-
-# Important: Deliberately wait with this import to after the update process, so updating
-# keeps working even if this import or anything in it fails
-from os2borgerpc.client.jobmanager import update_and_run  # noqa: E402
 
 update_and_run()
