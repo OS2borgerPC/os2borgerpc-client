@@ -26,3 +26,26 @@ def update_client():
     except subprocess.CalledProcessError:
         print("update_client failed\n", file=sys.stderr)
         traceback.print_exc()
+
+
+def update_client_test():
+    """Install the latest client from testpypi via pip."""
+    try:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "--force-reinstall",
+                "--index-url",
+                "https://test.pypi.org/simple/",
+                "--extra-index-url",
+                "https://pypi.org/simple/",
+                "os2borgerpc-client",
+            ]
+        )
+        sys.exit(0)
+    except subprocess.CalledProcessError:
+        print("update_client_test failed\n", file=sys.stderr)
+        traceback.print_exc()

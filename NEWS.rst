@@ -1,3 +1,12 @@
+Version 2.2.0, February 16, 2023
+--------------------------------
+
+New in this version:
+
+- Make the update process be dependent on much less code, so it's likelihood of breaking is reduced
+- Halve the release/updating speed in case errors are discovered
+- Add commented out code for easily installing from testpypi instead
+
 Version 2.1.1, February 16, 2023
 --------------------------------
 
