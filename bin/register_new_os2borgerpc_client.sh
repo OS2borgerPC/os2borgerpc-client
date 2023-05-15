@@ -7,14 +7,14 @@ DIR=$(dirname "${BASH_SOURCE[0]}")
 
 while true; do
     fatal() {
-        echo "Kritisk fejl, stopper:" "$@"
+        echo "Critical error, stopping:" "$@"
         while true; do
-            echo "[B]egynd forfra eller [S]top?"
+            echo "[R]estart registration or [S]top?"
             stty -echo
             read -rn 1 VALUE
             stty echo
             case "$VALUE" in
-                b|B)
+                r|R)
                     rm -f "$SHARED_CONFIG"
                     return 0 ;;
                 s|S)
@@ -30,10 +30,10 @@ while true; do
     # admin_url) manually.
     if [ "$(id -u)" != "0" ]
     then
-        fatal "Dette program skal køres som root" && continue || exit 1
+        fatal "This program must be run as root" && continue || exit 1
     fi
 
-    echo "Indtast gateway, tryk <ENTER> for ingen gateway eller automatisk opsætning"
+    echo "Enter gateway, press <ENTER> for no gateway or automatic setup"
     read -r GATEWAY_IP
 
     if [[ -z "$GATEWAY_IP" ]]
@@ -42,10 +42,10 @@ while true; do
         GATEWAY_SITE="http://$(os2borgerpc_find_gateway 2> /dev/null)"
     else
         # User entered IP address or hostname - test if reachable by ping
-        echo "Checker forbindelsen til gateway ..."
+        echo "Checking connection to the gateway ..."
         if ! ping -c 1 "$GATEWAY_IP" > /dev/null 2>&1
         then
-            fatal "Ugyldig gateway-adresse ($GATEWAY_IP)" && continue || exit 1
+            fatal "Invalid gateway address ($GATEWAY_IP)" && continue || exit 1
         else
             echo "OK"
         fi
@@ -65,13 +65,13 @@ while true; do
     # installation:
     # - hostname
     #   Prompt user for new host name
-    echo "Indtast venligst et nyt navn for denne computer:" \
-         "Navnet skal have en længde ml. 1-63 tegn," \
-         "og gyldige tegn er a-z, A-Z, 0-9 og bindestreg (-)."
+    echo "Please enter a new name for this computer:" \
+         "The name must have a length of 1-63 characters," \
+         "and valid characters are a-z, A-Z, 0-9 and hyphen (-)."
     # https://www.man7.org/linux/man-pages/man7/hostname.7.html
     read -r NEW_COMPUTER_NAME
     while [[ ! "$NEW_COMPUTER_NAME" =~ ^[0-9a-zA-Z][0-9a-zA-Z-]{1,63}$ ]]; do
-        echo "Ugyldigt computernavn.  Prøv igen."
+        echo "Invalid computer name. Try again."
         read -r NEW_COMPUTER_NAME
     done
 
@@ -96,7 +96,7 @@ while true; do
 
     if [[ -z "$SITE" ]]
     then
-        echo "Indtast UID for det site, computeren skal tilmeldes:"
+        echo "Enter the UID of the site that the computer should be added to:"
         read -r SITE
     fi
 
@@ -104,7 +104,7 @@ while true; do
     then
         set_os2borgerpc_config site "$SITE"
     else
-        fatal "Computeren kan ikke registreres uden site" && continue || exit 1
+        fatal "The computer cannot be registered without a site" && continue || exit 1
     fi
 
 
@@ -117,12 +117,12 @@ while true; do
     	. /etc/os-release
         DISTRO="$ID""$VERSION_ID"
     else
-        echo "Vi kan ikke se hvilket operativ system der er installeret." \
-             "Indtast venligst ID for PC'ens distribution:"
+        echo "We cannot detect the installed operating system." \
+             "Please enter the ID of the PC distribution:"
         read -r DISTRO
     fi
 
-    echo "Distributions ID: $DISTRO"
+    echo "Distribution ID: $DISTRO"
 
     set_os2borgerpc_config distribution "$DISTRO"
 
@@ -142,7 +142,7 @@ while true; do
     if [[ -z "$ADMIN_URL" ]]
     then
         ADMIN_URL="https://os2borgerpc-admin.magenta.dk"
-        echo "Indtast admin-url hvis det ikke er $ADMIN_URL"
+        echo "Enter the admin-url if it is not $ADMIN_URL"
         read -r NEW_ADMIN_URL
         if [[ -n "$NEW_ADMIN_URL" ]]
         then
@@ -154,7 +154,7 @@ while true; do
     # OK, we got the config.
     # Do the deed.
     if ! os2borgerpc_register_in_admin "$NEW_COMPUTER_NAME"; then
-        fatal "Tilmelding mislykkedes" && continue || exit 1
+        fatal "Registration failed" && continue || exit 1
     fi
 
     # Now setup cron job
