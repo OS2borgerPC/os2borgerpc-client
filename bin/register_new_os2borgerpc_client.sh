@@ -33,7 +33,7 @@ while true; do
         fatal "This program must be run as root" && continue || exit 1
     fi
 
-    echo "Press <ENTER> for no gateway or automatic setup. Alternatively, enter a gateway address"
+    echo "Press <ENTER> for no gateway or automatic setup. Alternatively, enter a gateway address:"
     read -r GATEWAY_IP
 
     if [[ -z "$GATEWAY_IP" ]]
@@ -68,13 +68,13 @@ while true; do
     # installation:
     # - hostname
     #   Prompt user for new host name
-    echo "Please enter a new name for this computer:" \
+    echo "Please enter a new name for this computer." \
          "The name must have a length of 1-63 characters," \
-         "and valid characters are a-z, A-Z, 0-9 and hyphen (-)."
+         "and valid characters are a-z, A-Z, 0-9 and hyphen (-):"
     # https://www.man7.org/linux/man-pages/man7/hostname.7.html
     read -r NEW_COMPUTER_NAME
     while [[ ! "$NEW_COMPUTER_NAME" =~ ^[0-9a-zA-Z][0-9a-zA-Z-]{1,63}$ ]]; do
-        echo "Invalid computer name. Try again."
+        echo "Invalid computer name. Try again:"
         read -r NEW_COMPUTER_NAME
     done
 
@@ -146,7 +146,7 @@ while true; do
     then
         ADMIN_URL="https://os2borgerpc-admin.magenta.dk"
         echo "Press <ENTER> to register with the following admin portal: $ADMIN_URL."
-        echo "Alternatively, type in your URL to another instance of the admin portal here."
+        echo "Alternatively, type in your URL to another instance of the admin portal here:"
         read -r NEW_ADMIN_URL
         if [[ -n "$NEW_ADMIN_URL" ]]
         then
