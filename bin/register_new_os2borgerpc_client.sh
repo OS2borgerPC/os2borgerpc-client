@@ -7,17 +7,17 @@ DIR=$(dirname "${BASH_SOURCE[0]}")
 
 while true; do
     fatal() {
-        echo "Kritisk fejl, stopper:" "$@"
+        echo "Critical error. Halting registration:" "$@"
         while true; do
-            echo "[B]egynd forfra eller [S]top?"
+            echo "[R]estart or [C]ancel registration?"
             stty -echo
             read -rn 1 VALUE
             stty echo
             case "$VALUE" in
-                b|B)
+                r|R)
                     rm -f "$SHARED_CONFIG"
                     return 0 ;;
-                s|S)
+                c|C)
                     return 1 ;;
             esac
         done
@@ -30,10 +30,10 @@ while true; do
     # admin_url) manually.
     if [ "$(id -u)" != "0" ]
     then
-        fatal "Dette program skal køres som root" && continue || exit 1
+        fatal "This program must be run as root" && continue || exit 1
     fi
 
-    echo "Indtast gateway, tryk <ENTER> for ingen gateway eller automatisk opsætning"
+    echo "Press <ENTER> for no gateway or automatic setup. Alternatively, enter a gateway address:"
     read -r GATEWAY_IP
 
     if [[ -z "$GATEWAY_IP" ]]
@@ -42,10 +42,10 @@ while true; do
         GATEWAY_SITE="http://$(os2borgerpc_find_gateway 2> /dev/null)"
     else
         # User entered IP address or hostname - test if reachable by ping
-        echo "Checker forbindelsen til gateway ..."
+        echo "Checking connection to the gateway ..."
         if ! ping -c 1 "$GATEWAY_IP" > /dev/null 2>&1
         then
-            fatal "Ugyldig gateway-adresse ($GATEWAY_IP)" && continue || exit 1
+            fatal "Invalid gateway address ($GATEWAY_IP)" && continue || exit 1
         else
             echo "OK"
         fi
@@ -61,17 +61,20 @@ while true; do
     then
         HAS_GATEWAY=1
     fi
+
+    echo ""
+
     # The following config parameters are needed to finalize the
     # installation:
     # - hostname
     #   Prompt user for new host name
-    echo "Indtast venligst et nyt navn for denne computer:" \
-         "Navnet skal have en længde ml. 1-63 tegn," \
-         "og gyldige tegn er a-z, A-Z, 0-9 og bindestreg (-)."
+    echo "Please enter a new name for this computer." \
+         "The name must have a length of 1-63 characters," \
+         "and valid characters are a-z, A-Z, 0-9 and hyphen (-):"
     # https://www.man7.org/linux/man-pages/man7/hostname.7.html
     read -r NEW_COMPUTER_NAME
     while [[ ! "$NEW_COMPUTER_NAME" =~ ^[0-9a-zA-Z][0-9a-zA-Z-]{1,63}$ ]]; do
-        echo "Ugyldigt computernavn.  Prøv igen."
+        echo "Invalid computer name. Try again:"
         read -r NEW_COMPUTER_NAME
     done
 
@@ -85,6 +88,7 @@ while true; do
     sed --in-place /127.0.1.1/d /etc/hosts
     sed --in-place "2i 127.0.1.1	$NEW_HOSTNAME" /etc/hosts
 
+    echo ""
 
     # - site
     #   TODO: Get site from gateway, if none present prompt user
@@ -96,7 +100,7 @@ while true; do
 
     if [[ -z "$SITE" ]]
     then
-        echo "Indtast UID for det site, computeren skal tilmeldes:"
+        echo "Enter your site UID:"
         read -r SITE
     fi
 
@@ -104,7 +108,7 @@ while true; do
     then
         set_os2borgerpc_config site "$SITE"
     else
-        fatal "Computeren kan ikke registreres uden site" && continue || exit 1
+        fatal "The computer cannot be registered without a site" && continue || exit 1
     fi
 
 
@@ -114,15 +118,13 @@ while true; do
     unset DISTRO
     if [[ -r /etc/os-release ]]; then
         # shellcheck source=/dev/null
-    	. /etc/os-release
+        . /etc/os-release
         DISTRO="$ID""$VERSION_ID"
     else
-        echo "Vi kan ikke se hvilket operativ system der er installeret." \
-             "Indtast venligst ID for PC'ens distribution:"
+        echo "We cannot detect the installed operating system." \
+             "Please enter an ID for the PC distribution:"
         read -r DISTRO
     fi
-
-    echo "Distributions ID: $DISTRO"
 
     set_os2borgerpc_config distribution "$DISTRO"
 
@@ -131,6 +133,7 @@ while true; do
     #   Get the mac-address
     set_os2borgerpc_config mac "$(ip addr | grep link/ether | awk 'FNR==1{print $2}')"
 
+    echo ""
 
     # - admin_url
     #   Get from gateway, otherwise prompt user.
@@ -142,7 +145,8 @@ while true; do
     if [[ -z "$ADMIN_URL" ]]
     then
         ADMIN_URL="https://os2borgerpc-admin.magenta.dk"
-        echo "Indtast admin-url hvis det ikke er $ADMIN_URL"
+        echo "Press <ENTER> to register with the following admin portal: $ADMIN_URL."
+        echo "Alternatively, type in your URL to another instance of the admin portal here:"
         read -r NEW_ADMIN_URL
         if [[ -n "$NEW_ADMIN_URL" ]]
         then
@@ -154,7 +158,7 @@ while true; do
     # OK, we got the config.
     # Do the deed.
     if ! os2borgerpc_register_in_admin "$NEW_COMPUTER_NAME"; then
-        fatal "Tilmelding mislykkedes" && continue || exit 1
+        fatal "Registration failed" && continue || exit 1
     fi
 
     # Now setup cron job
@@ -166,7 +170,6 @@ while true; do
 
     # Now randomize cron job to avoid everybody hitting the server every five minutes.
     "$DIR/randomize_jobmanager.sh" 5 > /dev/null
-
 
     break
 done
