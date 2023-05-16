@@ -7,9 +7,9 @@ DIR=$(dirname "${BASH_SOURCE[0]}")
 
 while true; do
     fatal() {
-        echo "Critical error, stopping:" "$@"
+        echo "Critical error. Halting registration:" "$@"
         while true; do
-            echo "[R]estart registration or [S]top?"
+            echo "[R]estart or [C]ancel registration?"
             stty -echo
             read -rn 1 VALUE
             stty echo
@@ -17,7 +17,7 @@ while true; do
                 r|R)
                     rm -f "$SHARED_CONFIG"
                     return 0 ;;
-                s|S)
+                c|C)
                     return 1 ;;
             esac
         done
@@ -33,7 +33,7 @@ while true; do
         fatal "This program must be run as root" && continue || exit 1
     fi
 
-    echo "Enter gateway, press <ENTER> for no gateway or automatic setup"
+    echo "Press <ENTER> for no gateway or automatic setup. Alternatively, enter a gateway address"
     read -r GATEWAY_IP
 
     if [[ -z "$GATEWAY_IP" ]]
@@ -61,6 +61,9 @@ while true; do
     then
         HAS_GATEWAY=1
     fi
+
+    echo ""
+
     # The following config parameters are needed to finalize the
     # installation:
     # - hostname
@@ -85,6 +88,7 @@ while true; do
     sed --in-place /127.0.1.1/d /etc/hosts
     sed --in-place "2i 127.0.1.1	$NEW_HOSTNAME" /etc/hosts
 
+    echo ""
 
     # - site
     #   TODO: Get site from gateway, if none present prompt user
@@ -96,7 +100,7 @@ while true; do
 
     if [[ -z "$SITE" ]]
     then
-        echo "Enter the UID of the site that the computer should be added to:"
+        echo "Enter your site UID:"
         read -r SITE
     fi
 
@@ -114,15 +118,13 @@ while true; do
     unset DISTRO
     if [[ -r /etc/os-release ]]; then
         # shellcheck source=/dev/null
-    	. /etc/os-release
+        . /etc/os-release
         DISTRO="$ID""$VERSION_ID"
     else
         echo "We cannot detect the installed operating system." \
-             "Please enter the ID of the PC distribution:"
+             "Please enter an ID for the PC distribution:"
         read -r DISTRO
     fi
-
-    echo "Distribution ID: $DISTRO"
 
     set_os2borgerpc_config distribution "$DISTRO"
 
@@ -131,6 +133,7 @@ while true; do
     #   Get the mac-address
     set_os2borgerpc_config mac "$(ip addr | grep link/ether | awk 'FNR==1{print $2}')"
 
+    echo ""
 
     # - admin_url
     #   Get from gateway, otherwise prompt user.
@@ -142,7 +145,8 @@ while true; do
     if [[ -z "$ADMIN_URL" ]]
     then
         ADMIN_URL="https://os2borgerpc-admin.magenta.dk"
-        echo "Enter the admin-url if it is not $ADMIN_URL"
+        echo "Press <ENTER> to register with the following admin portal: $ADMIN_URL."
+        echo "Alternatively, type in your URL to another instance of the admin portal here."
         read -r NEW_ADMIN_URL
         if [[ -n "$NEW_ADMIN_URL" ]]
         then
@@ -166,7 +170,6 @@ while true; do
 
     # Now randomize cron job to avoid everybody hitting the server every five minutes.
     "$DIR/randomize_jobmanager.sh" 5 > /dev/null
-
 
     break
 done
