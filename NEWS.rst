@@ -1,3 +1,10 @@
+Version 2.2.1, May 23, 2023
+---------------------------
+
+New in this version:
+
+- Translate client user interaction to English
+
 Version 2.2.0, February 16, 2023
 --------------------------------
 
