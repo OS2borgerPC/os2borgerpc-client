@@ -16,7 +16,7 @@ _release-prepare:
   rm --recursive --force dist
 
 # Release to testpypi
-release-testpypi: _release-prepare default
+release-testpypi: build
   # Important!: First clean up so we don't upload old packages along with the new one
   twine upload --repository testpypi dist/*
   # Now you or others can install it like this:
