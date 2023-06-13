@@ -1,5 +1,7 @@
 """Module for the admin client."""
 
+import xmlrpc.client
+
 
 def get_default_admin(verbose=False):
     """Return the default OS2borgerPCAdmin object."""
@@ -16,7 +18,8 @@ class OS2borgerPCAdmin(object):
 
     def __init__(self, url, verbose=False):
         """According to D107 docstrings are required."""
-        self._url = url
+        rpc_args = {"verbose": verbose, "allow_none": True}
+        self._rpc_srv = xmlrpc.client.ServerProxy(self._url, **rpc_args)
 
     def register_new_computer(self, mac, name, distribution, site, configuration):
         """register_new_computer from the admin site rpc module."""
