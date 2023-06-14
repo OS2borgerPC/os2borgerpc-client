@@ -19,7 +19,7 @@ class OS2borgerPCAdmin(object):
     def __init__(self, url, verbose=False):
         """According to D107 docstrings are required."""
         rpc_args = {"verbose": verbose, "allow_none": True}
-        self._rpc_srv = xmlrpc.client.ServerProxy(self._url, **rpc_args)
+        self._rpc_srv = xmlrpc.client.ServerProxy(url, **rpc_args)
 
     def register_new_computer(self, mac, name, distribution, site, configuration):
         """register_new_computer from the admin site rpc module."""
