@@ -25,41 +25,9 @@ while true; do
 
     # Get hold of config parameters, connect to admin system.
 
-    # Attempt to get shared config file from gateway.
-    # It this fails, the user must enter the corresponding data (site and
-    # admin_url) manually.
     if [ "$(id -u)" != "0" ]
     then
         fatal "This program must be run as root" && continue || exit 1
-    fi
-
-    echo "Press <ENTER> for no gateway or automatic setup. Alternatively, enter a gateway address:"
-    read -r GATEWAY_IP
-
-    if [[ -z "$GATEWAY_IP" ]]
-    then
-        # No gateway entered by user
-        GATEWAY_SITE="http://$(os2borgerpc_find_gateway 2> /dev/null)"
-    else
-        # User entered IP address or hostname - test if reachable by ping
-        echo "Checking connection to the gateway ..."
-        if ! ping -c 1 "$GATEWAY_IP" > /dev/null 2>&1
-        then
-            fatal "Invalid gateway address ($GATEWAY_IP)" && continue || exit 1
-        else
-            echo "OK"
-        fi
-        # Gateway is pingable - we assume that means it's OK.
-        GATEWAY_SITE="http://$GATEWAY_IP"
-        set_os2borgerpc_config gateway "$GATEWAY_IP"
-    fi
-
-    curl -s "$GATEWAY_SITE/os2borgerpc.conf" -o "$SHARED_CONFIG"
-
-    unset HAS_GATEWAY
-    if [[ -f "$SHARED_CONFIG" ]]
-    then
-        HAS_GATEWAY=1
     fi
 
     echo ""
@@ -91,19 +59,9 @@ while true; do
     echo ""
 
     # - site
-    #   TODO: Get site from gateway, if none present prompt user
-    unset SITE
-    if [[ -n "$HAS_GATEWAY" ]]
-    then
-        SITE="$(get_os2borgerpc_config site "$SHARED_CONFIG")"
-    fi
 
-    if [[ -z "$SITE" ]]
-    then
-        echo "Enter your site UID:"
-        read -r SITE
-    fi
-
+    echo "Enter your site UID:"
+    read -r SITE
     if [[ -n "$SITE" ]]
     then
         set_os2borgerpc_config site "$SITE"
@@ -136,12 +94,7 @@ while true; do
     echo ""
 
     # - admin_url
-    #   Get from gateway, otherwise prompt user.
     unset ADMIN_URL
-    if [[ -n "$HAS_GATEWAY" ]]
-    then
-        ADMIN_URL=$(get_os2borgerpc_config admin_url "$SHARED_CONFIG")
-    fi
     if [[ -z "$ADMIN_URL" ]]
     then
         ADMIN_URL="https://os2borgerpc-admin.magenta.dk"

@@ -18,7 +18,6 @@ setup(
     scripts=[
         "bin/get_os2borgerpc_config",
         "bin/set_os2borgerpc_config",
-        "bin/os2borgerpc_find_gateway",
         "bin/os2borgerpc_register_in_admin",
         "bin/os2borgerpc_push_config_keys",
         "bin/jobmanager",
