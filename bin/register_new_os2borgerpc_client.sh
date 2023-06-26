@@ -71,7 +71,7 @@ while true; do
 
 
     # - distribution
-    # Detect OS version and prompt user for verification
+    # Attempt to detect OS version, otherwise prompt user for it
 
     unset DISTRO
     if [[ -r /etc/os-release ]]; then
@@ -93,6 +93,7 @@ while true; do
 
     echo ""
 
+
     # - admin_url
     unset ADMIN_URL
     if [[ -z "$ADMIN_URL" ]]
@@ -108,6 +109,12 @@ while true; do
     fi
     set_os2borgerpc_config admin_url "$ADMIN_URL"
 
+    # - set additional config values
+    PC_MODEL=$(dmidecode --type system | grep Product | cut --delimiter : --fields 2)
+    [ -z "$PC_MODEL" ] && PC_MODEL="Identification failed"
+    set_os2borgerpc_config pc_model "$PC_MODEL"
+
+
     # OK, we got the config.
     # Do the deed.
     if ! os2borgerpc_register_in_admin "$NEW_COMPUTER_NAME"; then
@@ -117,12 +124,9 @@ while true; do
     # Now setup cron job
     if [[ -f $(command -v jobmanager) ]]
     then
-        echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' > /etc/cron.d/os2borgerpc-jobmanager
-        echo "*/5 * * * * root $(command -v jobmanager)" >> /etc/cron.d/os2borgerpc-jobmanager
+        # Randomize cron job to avoid everybody hitting the server the same minute
+        "$DIR/randomize_jobmanager.sh" 5 > /dev/null
     fi
-
-    # Now randomize cron job to avoid everybody hitting the server every five minutes.
-    "$DIR/randomize_jobmanager.sh" 5 > /dev/null
 
     break
 done
