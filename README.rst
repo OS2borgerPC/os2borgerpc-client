@@ -8,7 +8,7 @@ client for the OS2borgerPC Admin system.
 The code was developed by Magenta ApS (https://www.magenta.dk) and is part of the
 OS2borgerPC project.
 
-For more info about the OS2borgerPC project, please see the
+For more information about the OS2borgerPC project, please see the
 official home page:
 
     https://os2.eu/produkt/os2borgerpc
