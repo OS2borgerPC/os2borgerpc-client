@@ -6,7 +6,6 @@ import urllib.parse
 from os2borgerpc.client.config import OS2borgerPCConfig
 from os2borgerpc.client.admin_client import OS2borgerPCAdmin
 
-# This is passed in as a positional argument
 computer_name = sys.argv[1]
 
 config = OS2borgerPCConfig()

@@ -545,6 +545,12 @@ def update_and_run():
     # Get OS info for configuration
     os_name = distro.name()
     os_release = distro.version()
+    try:
+        ip_addresses = subprocess.run(
+            ["hostname", "--all-ip-addresses"], capture_output=True, text=True
+        ).stdout.strip()
+    except subprocess.CalledProcessError:
+        ip_addresses = ""
     if has_config("job_timeout"):
         try:
             job_timeout = int(config.get_value("job_timeout"))
@@ -561,6 +567,7 @@ def update_and_run():
                         "_os2borgerpc.client_version": OS2BORGERPC_CLIENT_VERSION,
                         "_os_release": os_release,
                         "_os_name": os_name,
+                        "_ip_addresses": ip_addresses,
                     }
                 )
                 instructions = get_instructions()
