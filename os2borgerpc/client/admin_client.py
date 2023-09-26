@@ -45,6 +45,10 @@ class OS2borgerPCAdmin(object):
         """push_security_events from the admin site rpc module."""
         return self._rpc_srv.push_security_events(pc_uid, csv_data)
 
-    def citizen_login(self, username, password, site):
+    def citizen_login(self, username, password, site, prevent_dual_login=False):
         """citizen_login from the admin site rpc module."""
-        return self._rpc_srv.citizen_login(username, password, site)
+        return self._rpc_srv.citizen_login(username, password, site, prevent_dual_login)
+
+    def citizen_logout(self, citizen_hash):
+        """citizen_logout from the admin site rpc module."""
+        return self._rpc_srv.citizen_logout(citizen_hash)
