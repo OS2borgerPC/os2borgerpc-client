@@ -1,5 +1,5 @@
-Version 2.3.0, September 26, 2023
----------------------------------
+Version 2.3.1, November 9, 2023
+-------------------------------
 
 New in this version:
 
