@@ -1,3 +1,14 @@
+Version 2.3.0, September 26, 2023
+---------------------------------
+
+New in this version:
+
+- Make the client report the current IP addresses to the admin-site during check-in
+- Report the computer model to the admin-site during registration
+- Randomize check-in times on seconds during registration
+- Support new Cicero functionality that prevents simultaneous logins
+- Remove outdated and unused Gateway functionality
+
 Version 2.2.1, May 23, 2023
 ---------------------------
 
