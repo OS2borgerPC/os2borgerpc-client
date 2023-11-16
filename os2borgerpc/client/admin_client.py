@@ -52,3 +52,19 @@ class OS2borgerPCAdmin(object):
     def citizen_logout(self, citizen_hash):
         """citizen_logout from the admin site rpc module."""
         return self._rpc_srv.citizen_logout(citizen_hash)
+
+    def sms_login(self, phone_number, password, site, require_booking, pc_name):
+        """sms_login from the admin site rpc module."""
+        return self._rpc_srv.sms_login(
+            phone_number, password, site, require_booking, pc_name
+        )
+
+    def sms_login_finalize(self, phone_number, site, require_booking, save_log):
+        """sms_login_finalize from the admin site rpc module."""
+        return self._rpc_srv.sms_login_finalize(
+            phone_number, site, require_booking, save_log
+        )
+
+    def sms_logout(self, citizen_hash, log_id):
+        """sms_logout from the admin site rpc module."""
+        return self._rpc_srv.sms_logout(citizen_hash, log_id)
