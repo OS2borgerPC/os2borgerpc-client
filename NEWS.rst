@@ -1,3 +1,11 @@
+Version 2.4.0, November 28, 2023
+--------------------------------
+
+New in this version:
+
+- Support new integration with SMSTeknik and Easy!Appointments used for login
+  via sms verification with or without booking
+
 Version 2.3.1, November 9, 2023
 -------------------------------
 
