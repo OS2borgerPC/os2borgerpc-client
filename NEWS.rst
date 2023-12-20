@@ -1,3 +1,10 @@
+Version 2.4.1, December 20, 2023
+--------------------------------
+
+New in this version:
+
+- Report the computer manufacturer, CPU and RAM to the admin-site during registration
+
 Version 2.4.0, November 28, 2023
 --------------------------------
 
