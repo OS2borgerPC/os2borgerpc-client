@@ -433,7 +433,7 @@ def report_job_results(joblist):
         job["log_output"] = "".join(
             ch
             for ch in job["log_output"]
-            if unicodedata.category(ch)[0] != "C" or ch == "\n"
+            if unicodedata.category(ch)[0] != "C" or ch == "\n" or ch == "\t"
         )
 
     try:
