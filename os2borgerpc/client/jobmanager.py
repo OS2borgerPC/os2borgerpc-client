@@ -1,4 +1,5 @@
 """Module for jobmanager."""
+
 import json
 import os.path
 import re
@@ -187,9 +188,9 @@ class LocalJob(dict):
     def handle_unsupported_file_encoding(self, prop, file_path):
         """Error handling in case a file has an unsupported file encoding."""
         if file_path == self.log_path:  # If the current property is a log file
-            self[
-                prop
-            ] = "The log had an unsupported file encoding (neither utf-8 nor latin-1)"
+            self[prop] = (
+                "The log had an unsupported file encoding (neither utf-8 nor latin-1)"
+            )
         else:
             self[prop] = ""
 
