@@ -301,7 +301,7 @@ class LocalJob(dict):
                 % (self.id, self["status"])
             )
             return
-        log = open(self.log_path, "a")
+        log = open(self.log_path, "w+")
         self.load_local_parameters()
         self.set_status("RUNNING")
         cmd = [self.executable_path]
@@ -309,10 +309,7 @@ class LocalJob(dict):
 
         for param in self["local_parameters"]:
             cmd.append(param["value"])
-            if param["type"] == "PASSWORD":
-                log_params.append("•••••")
-            else:
-                log_params.append(param["value"])
+            log_params.append(param["value"])
 
         self.mark_started()
         log.write(
@@ -338,6 +335,17 @@ class LocalJob(dict):
                 ">>> Failed with exit status %s at %s\n" % (ret_val, self["finished"])
             )
         os.remove(self.parameters_path)
+
+        log.seek(0)
+        log_content = log.read()
+
+        for param in self["local_parameters"]:
+            if param["type"] == "PASSWORD" and len(param["value"]) > 1:
+                log_content = log_content.replace(param["value"], "*****")
+
+        log.seek(0)
+        log.write(log_content)
+        log.truncate()
         log.close()
 
 
