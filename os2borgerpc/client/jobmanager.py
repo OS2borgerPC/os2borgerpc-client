@@ -12,6 +12,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from os import stat as os_stat
 
 import chardet
 import distro
@@ -560,6 +561,21 @@ def update_and_run():
         ).stdout.strip()
     except subprocess.CalledProcessError:
         ip_addresses = ""
+    try:
+        kernel_version = subprocess.run(
+            ["uname", "-r"], capture_output=True, text=True
+        ).stdout.strip()
+    except subprocess.CalledProcessError:
+        kernel_version = ""
+    if os.path.isfile("/var/lib/apt/periodic/unattended-upgrades-stamp"):
+        last_update_time = os_stat(
+            "/var/lib/apt/periodic/unattended-upgrades-stamp"
+        ).st_mtime
+        last_update_time = datetime.fromtimestamp(last_update_time).strftime(
+            "%Y-%m-%d %H:%M"
+        )
+    else:
+        last_update_time = ""
     if has_config("job_timeout"):
         try:
             job_timeout = int(config.get_value("job_timeout"))
@@ -577,6 +593,8 @@ def update_and_run():
                         "_os_release": os_release,
                         "_os_name": os_name,
                         "_ip_addresses": ip_addresses,
+                        "_kernel_version": kernel_version,
+                        "_last_update_time": last_update_time,
                     }
                 )
                 instructions = get_instructions()
