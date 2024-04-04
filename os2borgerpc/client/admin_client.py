@@ -55,16 +55,58 @@ class OS2borgerPCAdmin(object):
         """citizen_logout from the admin site rpc module."""
         return self._rpc_srv.citizen_logout(citizen_hash)
 
-    def sms_login(self, phone_number, message, pc_uid, require_booking, pc_name):
+    def general_citizen_login(self, pc_uid, integration, value_dict):
+        """general_citizen_login from the admin site rpc module."""
+        return self._rpc_srv.general_citizen_login(pc_uid, integration, value_dict)
+
+    def general_citizen_logout(self, citizen_hash, log_id):
+        """general_citizen_logout from the admin site rpc module."""
+        return self._rpc_srv.general_citizen_logout(citizen_hash, log_id)
+
+    def sms_login(
+        self,
+        phone_number,
+        message,
+        pc_uid,
+        require_booking,
+        pc_name,
+        allow_idle_login=False,
+        login_duration=None,
+        quarantine_duration=None,
+        unlimited_access=False,
+    ):
         """sms_login from the admin site rpc module."""
         return self._rpc_srv.sms_login(
-            phone_number, message, pc_uid, require_booking, pc_name
+            phone_number,
+            message,
+            pc_uid,
+            require_booking,
+            pc_name,
+            allow_idle_login,
+            login_duration,
+            quarantine_duration,
+            unlimited_access,
         )
 
-    def sms_login_finalize(self, phone_number, pc_uid, require_booking, save_log):
+    def sms_login_finalize(
+        self,
+        phone_number,
+        pc_uid,
+        require_booking,
+        save_log,
+        allow_idle_login=False,
+        login_duration=None,
+        quarantine_duration=None,
+    ):
         """sms_login_finalize from the admin site rpc module."""
         return self._rpc_srv.sms_login_finalize(
-            phone_number, pc_uid, require_booking, save_log
+            phone_number,
+            pc_uid,
+            require_booking,
+            save_log,
+            allow_idle_login,
+            login_duration,
+            quarantine_duration,
         )
 
     def sms_logout(self, citizen_hash, log_id):
