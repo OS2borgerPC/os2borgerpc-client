@@ -73,6 +73,7 @@ class OS2borgerPCAdmin(object):
         allow_idle_login=False,
         login_duration=None,
         quarantine_duration=None,
+        unlimited_access=False,
     ):
         """sms_login from the admin site rpc module."""
         return self._rpc_srv.sms_login(
@@ -84,6 +85,7 @@ class OS2borgerPCAdmin(object):
             allow_idle_login,
             login_duration,
             quarantine_duration,
+            unlimited_access,
         )
 
     def sms_login_finalize(
