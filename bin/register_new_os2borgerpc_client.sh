@@ -112,21 +112,26 @@ while true; do
     # - set additional config values
     PC_MODEL=$(dmidecode --type system | grep Product | cut --delimiter : --fields 2)
     [ -z "$PC_MODEL" ] && PC_MODEL="Identification failed"
+    PC_MODEL=${PC_MODEL:0:100}
     set_os2borgerpc_config pc_model "$PC_MODEL"
 
     PC_MANUFACTURER=$(dmidecode --type system | grep Manufacturer | cut --delimiter : --fields 2)
     [ -z "$PC_MANUFACTURER" ] && PC_MANUFACTURER="Identification failed"
+    PC_MANUFACTURER=${PC_MANUFACTURER:0:100}
     set_os2borgerpc_config pc_manufacturer "$PC_MANUFACTURER"
 
     # xargs is there to remove the leading space
-    CPUS_BASE_INFO="$(dmidecode -t processor | grep Version | cut --delimiter ':' --fields 2 | xargs)"
+    CPUS_BASE_INFO="$(dmidecode --type processor | grep Version | cut --delimiter ':' --fields 2 | xargs)"
+    CPUS_BASE_INFO=${CPUS_BASE_INFO:0:100}
     CPU_CORES="$(grep ^"core id" /proc/cpuinfo | sort -u | wc -l)"
+    CPU_CORES=${CPU_CORES:0:100}
     CPUS="$CPUS_BASE_INFO - $CPU_CORES physical cores"
     [ -z "$CPUS" ] && CPUS="Identification failed"
     set_os2borgerpc_config pc_cpus "$CPUS"
 
     RAM="$(LANG=c lsmem | grep "Total online" | cut --delimiter ':' --fields 2 | xargs)"
     [ -z "$RAM" ] && RAM="Identification failed"
+    RAM=${RAM:0:100}
     set_os2borgerpc_config pc_ram "$RAM"
 
     # OK, we got the config.

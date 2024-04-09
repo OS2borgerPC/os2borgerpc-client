@@ -45,24 +45,68 @@ class OS2borgerPCAdmin(object):
         """push_security_events from the admin site rpc module."""
         return self._rpc_srv.push_security_events(pc_uid, csv_data)
 
-    def citizen_login(self, username, password, site, prevent_dual_login=False):
+    def citizen_login(self, username, password, pc_uid, prevent_dual_login=False):
         """citizen_login from the admin site rpc module."""
-        return self._rpc_srv.citizen_login(username, password, site, prevent_dual_login)
+        return self._rpc_srv.citizen_login(
+            username, password, pc_uid, prevent_dual_login
+        )
 
     def citizen_logout(self, citizen_hash):
         """citizen_logout from the admin site rpc module."""
         return self._rpc_srv.citizen_logout(citizen_hash)
 
-    def sms_login(self, phone_number, message, site, require_booking, pc_name):
+    def general_citizen_login(self, pc_uid, integration, value_dict):
+        """general_citizen_login from the admin site rpc module."""
+        return self._rpc_srv.general_citizen_login(pc_uid, integration, value_dict)
+
+    def general_citizen_logout(self, citizen_hash, log_id):
+        """general_citizen_logout from the admin site rpc module."""
+        return self._rpc_srv.general_citizen_logout(citizen_hash, log_id)
+
+    def sms_login(
+        self,
+        phone_number,
+        message,
+        pc_uid,
+        require_booking,
+        pc_name,
+        allow_idle_login=False,
+        login_duration=None,
+        quarantine_duration=None,
+        unlimited_access=False,
+    ):
         """sms_login from the admin site rpc module."""
         return self._rpc_srv.sms_login(
-            phone_number, message, site, require_booking, pc_name
+            phone_number,
+            message,
+            pc_uid,
+            require_booking,
+            pc_name,
+            allow_idle_login,
+            login_duration,
+            quarantine_duration,
+            unlimited_access,
         )
 
-    def sms_login_finalize(self, phone_number, site, require_booking, save_log):
+    def sms_login_finalize(
+        self,
+        phone_number,
+        pc_uid,
+        require_booking,
+        save_log,
+        allow_idle_login=False,
+        login_duration=None,
+        quarantine_duration=None,
+    ):
         """sms_login_finalize from the admin site rpc module."""
         return self._rpc_srv.sms_login_finalize(
-            phone_number, site, require_booking, save_log
+            phone_number,
+            pc_uid,
+            require_booking,
+            save_log,
+            allow_idle_login,
+            login_duration,
+            quarantine_duration,
         )
 
     def sms_logout(self, citizen_hash, log_id):

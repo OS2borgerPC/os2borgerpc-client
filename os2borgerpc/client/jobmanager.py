@@ -1,4 +1,5 @@
 """Module for jobmanager."""
+
 import json
 import os.path
 import re
@@ -11,6 +12,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from os import stat as os_stat
 
 import chardet
 import distro
@@ -187,9 +189,9 @@ class LocalJob(dict):
     def handle_unsupported_file_encoding(self, prop, file_path):
         """Error handling in case a file has an unsupported file encoding."""
         if file_path == self.log_path:  # If the current property is a log file
-            self[
-                prop
-            ] = "The log had an unsupported file encoding (neither utf-8 nor latin-1)"
+            self[prop] = (
+                "The log had an unsupported file encoding (neither utf-8 nor latin-1)"
+            )
         else:
             self[prop] = ""
 
@@ -300,7 +302,7 @@ class LocalJob(dict):
                 % (self.id, self["status"])
             )
             return
-        log = open(self.log_path, "a")
+        log = open(self.log_path, "w+")
         self.load_local_parameters()
         self.set_status("RUNNING")
         cmd = [self.executable_path]
@@ -308,10 +310,7 @@ class LocalJob(dict):
 
         for param in self["local_parameters"]:
             cmd.append(param["value"])
-            if param["type"] == "PASSWORD":
-                log_params.append("•••••")
-            else:
-                log_params.append(param["value"])
+            log_params.append(param["value"])
 
         self.mark_started()
         log.write(
@@ -337,6 +336,17 @@ class LocalJob(dict):
                 ">>> Failed with exit status %s at %s\n" % (ret_val, self["finished"])
             )
         os.remove(self.parameters_path)
+
+        log.seek(0)
+        log_content = log.read()
+
+        for param in self["local_parameters"]:
+            if param["type"] == "PASSWORD" and len(param["value"]) > 1:
+                log_content = log_content.replace(param["value"], "*****")
+
+        log.seek(0)
+        log.write(log_content)
+        log.truncate()
         log.close()
 
 
@@ -433,7 +443,7 @@ def report_job_results(joblist):
         job["log_output"] = "".join(
             ch
             for ch in job["log_output"]
-            if unicodedata.category(ch)[0] != "C" or ch == "\n"
+            if unicodedata.category(ch)[0] != "C" or ch == "\n" or ch == "\t"
         )
 
     try:
@@ -551,6 +561,21 @@ def update_and_run():
         ).stdout.strip()
     except subprocess.CalledProcessError:
         ip_addresses = ""
+    try:
+        kernel_version = subprocess.run(
+            ["uname", "-r"], capture_output=True, text=True
+        ).stdout.strip()
+    except subprocess.CalledProcessError:
+        kernel_version = ""
+    if os.path.isfile("/var/lib/apt/periodic/unattended-upgrades-stamp"):
+        last_automatic_update_time = os_stat(
+            "/var/lib/apt/periodic/unattended-upgrades-stamp"
+        ).st_mtime
+        last_automatic_update_time = datetime.fromtimestamp(
+            last_automatic_update_time
+        ).strftime("%Y-%m-%d %H:%M")
+    else:
+        last_automatic_update_time = ""
     if has_config("job_timeout"):
         try:
             job_timeout = int(config.get_value("job_timeout"))
@@ -568,6 +593,8 @@ def update_and_run():
                         "_os_release": os_release,
                         "_os_name": os_name,
                         "_ip_addresses": ip_addresses,
+                        "_kernel_version": kernel_version,
+                        "_last_automatic_update_time": last_automatic_update_time,
                     }
                 )
                 instructions = get_instructions()
