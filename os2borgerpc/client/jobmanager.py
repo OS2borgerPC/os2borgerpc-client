@@ -571,9 +571,9 @@ def update_and_run():
         last_automatic_update_time = os_stat(
             "/var/lib/apt/periodic/unattended-upgrades-stamp"
         ).st_mtime
-        last_automatic_update_time = datetime.fromtimestamp(last_automatic_update_time).strftime(
-            "%Y-%m-%d %H:%M"
-        )
+        last_automatic_update_time = datetime.fromtimestamp(
+            last_automatic_update_time
+        ).strftime("%Y-%m-%d %H:%M")
     else:
         last_automatic_update_time = ""
     if has_config("job_timeout"):
