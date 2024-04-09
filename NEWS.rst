@@ -1,3 +1,17 @@
+Version 2.5.0, April 09, 2024
+-----------------------------
+
+New in this version:
+
+- Support new integration with Quria used for login via Quria credentials
+  with or without booking
+- Update functions related to SMSTeknik integration to support new functionality
+- Report kernel version and last update time during every check-in
+- Prevent PC info configurations from becoming too long
+- Hide password input parameters everywhere in script log output
+- Keep tabs in log output
+- Add readthedocs.yaml
+
 Version 2.4.1, December 20, 2023
 --------------------------------
 

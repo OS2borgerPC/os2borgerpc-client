@@ -568,14 +568,14 @@ def update_and_run():
     except subprocess.CalledProcessError:
         kernel_version = ""
     if os.path.isfile("/var/lib/apt/periodic/unattended-upgrades-stamp"):
-        last_update_time = os_stat(
+        last_automatic_update_time = os_stat(
             "/var/lib/apt/periodic/unattended-upgrades-stamp"
         ).st_mtime
-        last_update_time = datetime.fromtimestamp(last_update_time).strftime(
+        last_automatic_update_time = datetime.fromtimestamp(last_automatic_update_time).strftime(
             "%Y-%m-%d %H:%M"
         )
     else:
-        last_update_time = ""
+        last_automatic_update_time = ""
     if has_config("job_timeout"):
         try:
             job_timeout = int(config.get_value("job_timeout"))
@@ -594,7 +594,7 @@ def update_and_run():
                         "_os_name": os_name,
                         "_ip_addresses": ip_addresses,
                         "_kernel_version": kernel_version,
-                        "_last_update_time": last_update_time,
+                        "_last_automatic_update_time": last_automatic_update_time,
                     }
                 )
                 instructions = get_instructions()

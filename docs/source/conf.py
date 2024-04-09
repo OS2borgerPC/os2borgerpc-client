@@ -24,7 +24,7 @@ copyright = "2024, Magenta ApS"
 author = "Magenta ApS"
 
 # The full version, including alpha/beta/rc tags
-release = "2.4.1"
+release = "2.5.0"
 
 
 # -- General configuration ---------------------------------------------------
