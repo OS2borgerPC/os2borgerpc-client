@@ -5,58 +5,34 @@ import pkg_resources
 import random
 import semver
 import sys
-import subprocess
 
-try:
-    from os2borgerpc.client.updater import (  # noqa: F401
-        get_newest_client_version,
-        update_client,
-        update_client_test,
-    )
-    from os2borgerpc.client.jobmanager import update_and_run  # noqa: E402
-except ImportError:
-    # If any of the imports fail, reinstall the client
-    try:
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "--force-reinstall",
-                "os2borgerpc-client",
-            ]
-        )
-        sys.exit(0)
-    except subprocess.CalledProcessError:
-        print("Restoring client failed\n", file=sys.stderr)
+from os2borgerpc.client.config import get_config
+from os2borgerpc.client.updater import get_newest_client_version, update_client
+from os2borgerpc.client.jobmanager import update_and_run
 
-# Higher values: Check for updates less often
-UPDATE_FREQUENCY = 200
+# Ensure the script is run as root
+if os.geteuid() != 0:
+    sys.exit("\nOnly root can run this program.\n")
 
-if not os.geteuid() == 0:
-    sys.exit("\n Only root can run this program. \n")
+# Constants
+UPDATE_FREQUENCY = 200  # Higher values: Check for updates less often
 
-# We are root!
+# Get the current and desired client versions
+CURRENT_CLIENT_VERSION = pkg_resources.get_distribution("os2borgerpc_client").version
+DESIRED_CLIENT_VERSION = get_config("os2borgerpc_client_version")
 
-# Keep this in sync with package name in setup.py
-# This is deliberatly duplicated here from jobmanager.py to not be
-# dependent on jobmanager.py at this point
-OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
-    "os2borgerpc_client"
-).version
+# Automatically fetch the newest version if configured
+if DESIRED_CLIENT_VERSION.lower() == "auto" and random.randint(1, UPDATE_FREQUENCY) == 1:
+    DESIRED_CLIENT_VERSION = get_newest_client_version()
 
-# Perform an update-check with a random interval.
-if random.randint(1, UPDATE_FREQUENCY) == 1:
-    print("Checking for new update to client.")
-    newest_client_version = get_newest_client_version()
-    print(
-        f"Newest client version: {newest_client_version}, "
-        f"Installed version: {OS2BORGERPC_CLIENT_VERSION}"
-    )
-    # update_client_test()
-    if semver.compare(newest_client_version, OS2BORGERPC_CLIENT_VERSION) == 1:
+# Check for updates if a desired version is specified
+if DESIRED_CLIENT_VERSION and DESIRED_CLIENT_VERSION.lower() != "auto":
+    stripped_version = DESIRED_CLIENT_VERSION.lstrip("v")
+    if semver.compare(stripped_version, CURRENT_CLIENT_VERSION) == 1:
+        print(f"Installed client version: {CURRENT_CLIENT_VERSION}")
+        print(f"Desired client version: {DESIRED_CLIENT_VERSION}")
         print("Updating client, please re-run jobmanager.")
-        update_client()
+        update_client(DESIRED_CLIENT_VERSION)
 
+# Run the job manager
 update_and_run()
