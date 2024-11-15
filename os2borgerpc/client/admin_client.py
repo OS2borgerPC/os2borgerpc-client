@@ -8,7 +8,7 @@ def get_default_admin(verbose=False):
     from os2borgerpc.client.config import OS2borgerPCConfig
 
     conf_data = OS2borgerPCConfig().get_data()
-    admin_url = conf_data.get("admin_url", "https://os2borgerpc.magenta-aps.dk")
+    admin_url = conf_data.get("admin_url")
     xml_rpc_url = conf_data.get("xml_rpc_url", "/admin-xml/")
     return OS2borgerPCAdmin("".join([admin_url, xml_rpc_url]), verbose=verbose)
 
