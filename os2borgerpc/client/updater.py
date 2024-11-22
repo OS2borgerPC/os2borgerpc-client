@@ -31,7 +31,7 @@ def get_newest_client_version():
         repo_parts = client_package.split("/")
         if len(repo_parts) >= 5:
             repo_user = repo_parts[3]
-            repo_name = repo_parts[4]
+            repo_name = repo_parts[4].removesuffix('.git')
             repo_url = f"{repo_user}/{repo_name}"
             newest_version = get_latest_version_from_github(repo_url)
             if newest_version:
