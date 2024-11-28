@@ -95,75 +95,57 @@ while true; do
 
     unset ADMIN_URL
 
-    # Search for AdminSiteUrl.txt in the root of connected volumes
-    echo "Searching for AdminSiteUrl.txt in /media, /mnt and /Volumes"
-    for volume in /media/* /mnt/* /Volumes/*; do
-      filepath=$(find "$volume" -maxdepth 2 -type f -name "AdminSiteUrl.txt" 2>/dev/null)
-      if [[ -n "$filepath" && -r "$filepath" ]]; then
-          ADMIN_URL=$(<"$filepath")
-          echo "AdminSiteUrl.txt found at $filepath containing '$ADMIN_URL'"
-          echo "Trying to connect to admin site using URL '$ADMIN_URL'."
-          break
-      fi
-    done
+    # Clone the git repository
+    if ! command -v git &> /dev/null 
+    then
+      apt install -qq git -y
+    fi
 
-    # If AdminSiteUrl.txt was not found
-    if [[ -z "$ADMIN_URL" ]]; then
-      echo "AdminSiteUrl.txt not found. Getting AdminSiteUrls.yaml from OS2 repo."
-      # Clone the git repository
-      if ! command -v git &> /dev/null 
-      then
-        apt install -qq git -y
-      fi
+    if [ ! -d "repo_tmp" ]; then
+      REPO_URL="https://github.com/OS2borgerPC/os2borgerpc-admin-site-urls.git"
+      GIT_ASKPASS=true git clone --depth 1 "$REPO_URL" repo_tmp
+    fi
 
-      if [ ! -d "repo_tmp" ]; then
-        REPO_URL="https://github.com/OS2borgerPC/os2borgerpc-admin-site-urls.git"
-        GIT_ASKPASS=true git clone --depth 1 "$REPO_URL" repo_tmp
-      fi
-
-      cd repo_tmp || true # Do nothing if 'cd' fails
-
-      # Read key/value pairs from AdminSiteUrls.yaml
-      if [[ ! -f "AdminSiteUrls.yaml" ]]; then
-        echo "Error: AdminSiteUrls.yaml not found after trying to download it."
+    # Read key/value pairs from AdminSiteUrls.yaml
+    if [[ ! -f "repo_tmp/AdminSiteUrls.yaml" ]]; then
+      echo "Error: AdminSiteUrls.yaml not found after trying to download it."
+      read -rp "Type URL for admin site: " ADMIN_URL
+    else
+      # Parse the YAML file and present the options to the user
+      OPTIONS=()
+      while IFS= read -r line; do
+        if [[ $line =~ ^([a-zA-Z0-9_-]+):[[:space:]]*(https?://[^[:space:]]+)$ ]]; then
+          NAME="${BASH_REMATCH[1]}"
+          URL="${BASH_REMATCH[2]}"
+          OPTIONS+=("$NAME|$URL")
+        fi
+      done < repo_tmp/AdminSiteUrls.yaml
+  
+      # Present URLs to the user
+      if [[ ${#OPTIONS[@]} -eq 0 ]]; then
+        echo "Error: No valid URLs found in AdminSiteUrls.yaml."
         read -rp "Type URL for admin site: " ADMIN_URL
       else
-        # Parse the YAML file and present the options to the user
-        OPTIONS=()
-        while IFS= read -r line; do
-          if [[ $line =~ ^([a-zA-Z0-9_-]+):[[:space:]]*(https?://[^[:space:]]+)$ ]]; then
-            NAME="${BASH_REMATCH[1]}"
-            URL="${BASH_REMATCH[2]}"
-            OPTIONS+=("$NAME|$URL")
-          fi
-        done < AdminSiteUrls.yaml
+        echo ""
+        echo "Found admin site URLs:"
+        for i in "${!OPTIONS[@]}"; do
+          NAME="${OPTIONS[$i]%%|*}"
+          URL="${OPTIONS[$i]#*|}"
+          echo "$((i+1)). $NAME: $URL"
+        done
   
-        # Present URLs to the user
-        if [[ ${#OPTIONS[@]} -eq 0 ]]; then
-          echo "Error: No valid URLs found in AdminSiteUrls.yaml."
-          read -rp "Type URL for admin site: " ADMIN_URL
+        # Get user's choice
+        read -rp "Enter the number of the admin site you want to use, or type a URL to be used instead: " CHOICE
+        if [[ "$CHOICE" =~ ^[0-9]+$ ]] && (( CHOICE > 0 && CHOICE <= ${#OPTIONS[@]} )); then
+          ADMIN_URL="${OPTIONS[$((CHOICE-1))]#*|}"
         else
-          echo ""
-          echo "Found admin site URLs:"
-          for i in "${!OPTIONS[@]}"; do
-            NAME="${OPTIONS[$i]%%|*}"
-            URL="${OPTIONS[$i]#*|}"
-            echo "$((i+1)). $NAME: $URL"
-          done
-  
-          # Get user's choice
-          read -rp "Enter the number of the admin site you want to use, or type a URL to be used instead: " CHOICE
-          if [[ "$CHOICE" =~ ^[0-9]+$ ]] && (( CHOICE > 0 && CHOICE <= ${#OPTIONS[@]} )); then
-            ADMIN_URL="${OPTIONS[$((CHOICE-1))]#*|}"
-          else
-            $ADMIN_URL="$CHOICE"
-          fi
+          $ADMIN_URL="$CHOICE"
         fi
       fi
-      # Clean up temporary repository
-      rm -rf repo_tmp
-      cd ..
     fi
+    # Clean up temporary repository
+    rm -rf repo_tmp || true # do nothing if 'rm' fails
+    
     
     set_os2borgerpc_config admin_url "$ADMIN_URL"
 
