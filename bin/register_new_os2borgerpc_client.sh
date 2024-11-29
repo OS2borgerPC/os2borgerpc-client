@@ -93,20 +93,60 @@ while true; do
 
     echo ""
 
-
-    # - admin_url
     unset ADMIN_URL
-    if [[ -z "$ADMIN_URL" ]]
+
+    # Clone the git repository
+    if ! command -v git &> /dev/null 
     then
-        ADMIN_URL="https://os2borgerpc-admin.magenta.dk"
-        echo "Press <ENTER> to register with the following admin portal: $ADMIN_URL."
-        echo "Alternatively, type in your URL to another instance of the admin portal here:"
-        read -r NEW_ADMIN_URL
-        if [[ -n "$NEW_ADMIN_URL" ]]
-        then
-            ADMIN_URL="$NEW_ADMIN_URL"
-        fi
+      apt install -qq git -y
     fi
+
+    if [ ! -d "repo_tmp" ]; then
+      REPO_URL="https://github.com/OS2borgerPC/os2borgerpc-admin-site-urls.git"
+      GIT_ASKPASS=true git clone --depth 1 "$REPO_URL" repo_tmp
+    fi
+
+    # Read key/value pairs from AdminSiteUrls.yaml
+    if [[ ! -f "repo_tmp/AdminSiteUrls.yaml" ]]; then
+      echo "Error: AdminSiteUrls.yaml not found after trying to download it."
+      read -rp "Type URL for admin site: " ADMIN_URL
+    else
+      # Parse the YAML file and present the options to the user
+      OPTIONS=()
+      while IFS= read -r line; do
+        if [[ $line =~ ^([a-zA-Z0-9_-]+):[[:space:]]*(https?://[^[:space:]]+)$ ]]; then
+          NAME="${BASH_REMATCH[1]}"
+          URL="${BASH_REMATCH[2]}"
+          OPTIONS+=("$NAME|$URL")
+        fi
+      done < repo_tmp/AdminSiteUrls.yaml
+  
+      # Present URLs to the user
+      if [[ ${#OPTIONS[@]} -eq 0 ]]; then
+        echo "Error: No valid URLs found in AdminSiteUrls.yaml."
+        read -rp "Type URL for admin site: " ADMIN_URL
+      else
+        echo ""
+        echo "Found admin site URLs:"
+        for i in "${!OPTIONS[@]}"; do
+          NAME="${OPTIONS[$i]%%|*}"
+          URL="${OPTIONS[$i]#*|}"
+          echo "$((i+1)). $NAME: $URL"
+        done
+  
+        # Get user's choice
+        read -rp "Enter the number of the admin site you want to use, or type a URL to be used instead: " CHOICE
+        if [[ "$CHOICE" =~ ^[0-9]+$ ]] && (( CHOICE > 0 && CHOICE <= ${#OPTIONS[@]} )); then
+          ADMIN_URL="${OPTIONS[$((CHOICE-1))]#*|}"
+        else
+          $ADMIN_URL="$CHOICE"
+        fi
+      fi
+    fi
+    # Clean up temporary repository
+    rm -rf repo_tmp || true # do nothing if 'rm' fails
+    
+    
     set_os2borgerpc_config admin_url "$ADMIN_URL"
 
     # - set additional config values
@@ -146,6 +186,5 @@ while true; do
         # Randomize cron job to avoid everybody hitting the server the same minute
         "$DIR/randomize_jobmanager.sh" 5 > /dev/null
     fi
-
     break
 done
