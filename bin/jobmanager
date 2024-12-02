@@ -19,14 +19,17 @@ UPDATE_FREQUENCY = 200  # Higher values: Check for updates less often
 
 # Get the current and desired client versions
 CURRENT_CLIENT_VERSION = pkg_resources.get_distribution("os2borgerpc_client").version
-DESIRED_CLIENT_VERSION = get_config("os2borgerpc_client_version")
+DESIRED_CLIENT_VERSION = None  # Default to None
 
-# Automatically fetch the newest version if configured
-if DESIRED_CLIENT_VERSION.lower() == "auto" and random.randint(1, UPDATE_FREQUENCY) == 1:
-    DESIRED_CLIENT_VERSION = get_newest_client_version()
+try:
+    DESIRED_CLIENT_VERSION = get_config("os2borgerpc_client_version")
+except KeyError:
+    # If not set, enable periodic: Automatically fetch the newest version if the key is missing
+    if random.randint(1, UPDATE_FREQUENCY) == 1:
+        DESIRED_CLIENT_VERSION = get_newest_client_version()
 
 # Check for updates if a desired version is specified
-if DESIRED_CLIENT_VERSION and DESIRED_CLIENT_VERSION.lower() != "auto":
+if DESIRED_CLIENT_VERSION:
     stripped_version = DESIRED_CLIENT_VERSION.lstrip("v")
     if semver.compare(stripped_version, CURRENT_CLIENT_VERSION) == 1:
         print(f"Installed client version: {CURRENT_CLIENT_VERSION}")
