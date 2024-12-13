@@ -139,7 +139,7 @@ while true; do
         if [[ "$CHOICE" =~ ^[0-9]+$ ]] && (( CHOICE > 0 && CHOICE <= ${#OPTIONS[@]} )); then
           ADMIN_URL="${OPTIONS[$((CHOICE-1))]#*|}"
         else
-          $ADMIN_URL="$CHOICE"
+          ADMIN_URL="$CHOICE"
         fi
       fi
     fi
