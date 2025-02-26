@@ -7,7 +7,7 @@ setup(
     # Keep this name in sync with the one in os2borgerpc_client/jobmanager.py
     name="os2borgerpc_client",
     use_scm_version=True,  # Automatically uses Git tags for versioning
-    setup_requires=['setuptools-scm'],  # Ensure setuptools-scm is used
+    setup_requires=['setuptools-scm==7.1.0'],  # Ensure setuptools-scm is used. Pin setuptools-scm to version 7.1.0
     description="Client for the OS2borgerPC system",
     long_description=long_description,
     url="https://github.com/OS2borgerPC/",
