@@ -48,7 +48,7 @@ while true; do
 
     # Idea: Allow uppercase in the computername due to popular demand,
     # but lowercase it so it's a valid hostname which is case insensitive
-    NEW_HOSTNAME=$(echo "$NEW_COMPUTER_NAME" | tr '[:upper:]' '[:lower:]')
+    NEW_HOSTNAME=${NEW_COMPUTER_NAME,,}
 
     echo "$NEW_HOSTNAME" > /etc/hostname
     set_os2borgerpc_config hostname "$NEW_HOSTNAME"
