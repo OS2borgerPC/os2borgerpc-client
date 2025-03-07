@@ -169,7 +169,7 @@ while true; do
     [ -z "$CPUS" ] && CPUS="Identification failed"
     set_os2borgerpc_config pc_cpus "$CPUS"
 
-    RAM="$(LANG=c lsmem | grep "Total online" | cut --delimiter ':' --fields 2 | xargs)"
+    RAM="$(free -h | awk '/^Mem:/ {print $2}')"
     [ -z "$RAM" ] && RAM="Identification failed"
     RAM=${RAM:0:100}
     set_os2borgerpc_config pc_ram "$RAM"
