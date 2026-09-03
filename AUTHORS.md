@@ -8,7 +8,7 @@ Thank you for contributing to the OS2-governed product OS2BorgerPC, which is lic
 | Alexander Faithfull | Magenta ApS |
 | Andreas Poulsen | Magenta ApS |
 | Carsten Agger | Magenta ApS |
-| debjazkb297 | GitHub user (noreply) |
+| Dennis Borup Jacobsen | Aarhus Kommune |
 | Emil Nordahn Andersen | Magenta ApS |
 | Heini Ovason | Personal email (organization unknown) |
 | Henrik Eidnes | KvalitetsIT |
