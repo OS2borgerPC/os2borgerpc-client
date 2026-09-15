@@ -1,3 +1,8 @@
+Version 2.7.0, September 15, 2026
+----------------------------
+
+- Added client key authentication support: the client now generates and sends a per-client key when talking to the admin site's XML-RPC API, falling back gracefully when the server doesn't support it yet.
+
 Version 2.6.5, March 7, 2025
 ----------------------------
 
