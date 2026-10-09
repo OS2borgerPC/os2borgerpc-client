@@ -16,7 +16,6 @@ from os import stat as os_stat
 
 import chardet
 import distro
-import pkg_resources
 
 from os2borgerpc.client.admin_client import OS2borgerPCAdmin
 from os2borgerpc.client.config import has_config
@@ -24,12 +23,11 @@ from os2borgerpc.client.config import OS2borgerPCConfig
 from os2borgerpc.client.security.security import check_security_events
 from os2borgerpc.client.utils import filelock
 from os2borgerpc.client.utils import get_url_and_uid
+from importlib.metadata import version
 
 
 # Keep this in sync with package name in setup.py
-OS2BORGERPC_CLIENT_VERSION = pkg_resources.get_distribution(
-    "os2borgerpc_client"
-).version
+OS2BORGERPC_CLIENT_VERSION = version("os2borgerpc_client")
 DEFAULT_JOB_TIMEOUT = 900
 
 JOBS_DIR = "/var/lib/os2borgerpc/jobs"

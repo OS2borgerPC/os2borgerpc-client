@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import pkg_resources
 import random
 import semver
 import sys
@@ -9,6 +8,7 @@ import sys
 from os2borgerpc.client.config import get_config
 from os2borgerpc.client.updater import get_newest_client_version, update_client
 from os2borgerpc.client.jobmanager import update_and_run
+from importlib.metadata import version
 
 # Ensure the script is run as root
 if os.geteuid() != 0:
@@ -18,7 +18,7 @@ if os.geteuid() != 0:
 UPDATE_FREQUENCY = 200  # Higher values: Check for updates less often
 
 # Get the current and desired client versions
-CURRENT_CLIENT_VERSION = pkg_resources.get_distribution("os2borgerpc_client").version
+CURRENT_CLIENT_VERSION = version("os2borgerpc_client")
 DESIRED_CLIENT_VERSION = None  # Default to None
 
 try:
